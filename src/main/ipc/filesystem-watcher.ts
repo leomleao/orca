@@ -518,6 +518,10 @@ async function installRemoteWatcher(
     const inFlight = inFlightRemoteInstalls.get(key)
     if (inFlight && !sender.isDestroyed()) {
       inFlight.listeners.set(sender.id, sender)
+      // Why: a new watcher can join after all previous pending listeners
+      // unwatched but before provider.watch() resolves; revive that install
+      // instead of inheriting the stale cancellation.
+      inFlight.cancelled = false
     }
     const result = await pendingInstall
     if (

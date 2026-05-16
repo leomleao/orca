@@ -281,6 +281,41 @@ describe('registerFilesystemWatcherHandlers', () => {
     expect(unwatchMock).toHaveBeenCalledTimes(1)
   })
 
+  it('revives a pending SSH watcher install when a new sender joins after cancellation', async () => {
+    const args = { worktreePath: '/home/me/repo', connectionId: 'conn-1' }
+    const senderOne = { isDestroyed: () => false, send: vi.fn(), once: vi.fn(), id: 1 }
+    const senderTwo = { isDestroyed: () => false, send: vi.fn(), once: vi.fn(), id: 2 }
+    const unwatchMock = vi.fn()
+    let resolveWatch!: (unwatch: () => void) => void
+    const watchMock = vi.fn().mockReturnValue(
+      new Promise<() => void>((resolve) => {
+        resolveWatch = resolve
+      })
+    )
+    getSshFilesystemProviderMock.mockReturnValue({ watch: watchMock })
+
+    const firstWatch = handlers['fs:watchWorktree']({ sender: senderOne }, args) as Promise<unknown>
+
+    await Promise.resolve()
+    handlers['fs:unwatchWorktree']({ sender: { id: 1 } }, args)
+    const secondWatch = handlers['fs:watchWorktree'](
+      { sender: senderTwo },
+      args
+    ) as Promise<unknown>
+
+    expect(watchMock).toHaveBeenCalledTimes(1)
+    resolveWatch(unwatchMock)
+    await Promise.all([firstWatch, secondWatch])
+
+    const onEvents = watchMock.mock.calls[0][1]
+    onEvents([{ path: '/home/me/repo/file.txt', type: 'update' }])
+    expect(senderOne.send).not.toHaveBeenCalled()
+    expect(senderTwo.send).toHaveBeenCalledTimes(1)
+
+    handlers['fs:unwatchWorktree']({ sender: { id: 2 } }, args)
+    expect(unwatchMock).toHaveBeenCalledTimes(1)
+  })
+
   it('registers one destroyed listener for many SSH worktree watches', async () => {
     const destroyedCallbacks: (() => void)[] = []
     const sender = {
