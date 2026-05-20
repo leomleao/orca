@@ -1,4 +1,4 @@
-import type { Worktree, Repo, TerminalTab } from '../../../../shared/types'
+import type { Worktree, Repo, TerminalTab, WorktreeLineage } from '../../../../shared/types'
 import { buildWorktreeComparator, sortWorktreesSmart } from './smart-sort'
 import { tabHasLivePty } from '@/lib/tab-has-live-pty'
 import { isWebTerminalSurfaceTabId } from '@/runtime/web-terminal-surface-id'
@@ -90,12 +90,17 @@ export function computeVisibleWorktreeIds(
     // forgetting to pass it.
     hideDefaultBranchWorkspace: boolean
     repoMap: Map<string, Repo>
+    worktreeLineageById: Record<string, WorktreeLineage>
   }
 ): string[] {
   let all: Worktree[] = getAllWorktreesFromState({ worktreesByRepo })
 
   // Filter archived
   all = all.filter((w) => !w.isArchived)
+
+  // Why: sidebar lineage is structural. Archived workspaces stay hidden, but
+  // every other valid ancestor can bypass filters so children never orphan.
+  const lineageAncestorById = new Map(all.map((w) => [w.id, w]))
 
   if (opts.hideDefaultBranchWorkspace) {
     all = all.filter((w) => !isDefaultBranchWorkspace(w))
@@ -138,7 +143,53 @@ export function computeVisibleWorktreeIds(
     return ai - bi
   })
 
-  return all.map((w) => w.id)
+  return addVisibleLineageAncestors(
+    all.map((w) => w.id),
+    lineageAncestorById,
+    opts.worktreeLineageById
+  )
+}
+
+function addVisibleLineageAncestors(
+  ids: string[],
+  worktreeById: Map<string, Worktree>,
+  lineageById: Record<string, WorktreeLineage>
+): string[] {
+  const result: string[] = []
+  const included = new Set<string>()
+  const visiting = new Set<string>()
+
+  const addWithAncestors = (id: string): void => {
+    if (included.has(id) || visiting.has(id)) {
+      return
+    }
+    const worktree = worktreeById.get(id)
+    if (!worktree) {
+      return
+    }
+    visiting.add(id)
+    const lineage = lineageById[id]
+    const parent = lineage ? worktreeById.get(lineage.parentWorktreeId) : undefined
+    if (
+      parent &&
+      worktree.instanceId === lineage.worktreeInstanceId &&
+      parent.instanceId === lineage.parentWorktreeInstanceId
+    ) {
+      // Why: sidebar lineage is structural. If a filtered child is visible,
+      // its valid parent must be rendered too so the hierarchy remains legible.
+      addWithAncestors(parent.id)
+    }
+    visiting.delete(id)
+    if (!included.has(id)) {
+      included.add(id)
+      result.push(id)
+    }
+  }
+
+  for (const id of ids) {
+    addWithAncestors(id)
+  }
+  return result
 }
 
 /**
@@ -214,6 +265,7 @@ export function getVisibleWorktreeIds(): string[] {
     browserTabsByWorktree: state.browserTabsByWorktree,
     activeWorktreeId: state.activeWorktreeId,
     hideDefaultBranchWorkspace: state.hideDefaultBranchWorkspace,
-    repoMap
+    repoMap,
+    worktreeLineageById: state.worktreeLineageById
   })
 }

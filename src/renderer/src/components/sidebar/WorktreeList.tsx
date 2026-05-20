@@ -1437,12 +1437,6 @@ const VirtualizedWorktreeViewport = React.memo(function VirtualizedWorktreeViewp
                     onSelectionGesture={onSelectionGesture}
                     onContextMenuSelect={(event) => onContextMenuSelect(event, itemRow.worktree)}
                     hideRepoBadge={groupBy === 'repo'}
-                    parentLabel={
-                      itemRow.depth > 0 && itemRow.lineageState === 'valid'
-                        ? undefined
-                        : itemRow.parentLabel
-                    }
-                    lineageState={itemRow.lineageState}
                     lineageChildCount={itemRow.lineageChildCount}
                     lineageCollapsed={itemRow.lineageCollapsed}
                     lineageChildren={lineageChildren}
@@ -1964,7 +1958,8 @@ const WorktreeList = React.memo(function WorktreeList({
       browserTabsByWorktree,
       activeWorktreeId,
       hideDefaultBranchWorkspace,
-      repoMap
+      repoMap,
+      worktreeLineageById
     })
     return ids.map((id) => worktreeMap.get(id)).filter((w): w is Worktree => w != null)
   }, [
@@ -1978,6 +1973,7 @@ const WorktreeList = React.memo(function WorktreeList({
     browserTabsByWorktree,
     sortedIds,
     worktreeMap,
+    worktreeLineageById,
     worktreesByRepo
   ])
 

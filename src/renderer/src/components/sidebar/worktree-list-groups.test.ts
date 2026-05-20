@@ -455,8 +455,7 @@ describe('buildRows workspace lineage nesting', () => {
     expect(items[1]).toMatchObject({
       type: 'item',
       worktree: { id: child.id },
-      depth: 1,
-      parentLabel: 'coordinator'
+      depth: 1
     })
   })
 
@@ -530,7 +529,7 @@ describe('buildRows workspace lineage nesting', () => {
     })
   })
 
-  it('marks stale instance links as missing without creating a parent group', () => {
+  it('does not create a parent group for stale instance links', () => {
     const staleLineage = { ...lineage, parentWorktreeInstanceId: 'old-parent-instance' }
     const rows = buildRows(
       'none',
@@ -553,7 +552,7 @@ describe('buildRows workspace lineage nesting', () => {
     expect(items[0]).toMatchObject({
       type: 'item',
       worktree: { id: child.id },
-      lineageState: 'missing'
+      depth: 0
     })
   })
 
@@ -571,7 +570,7 @@ describe('buildRows workspace lineage nesting', () => {
     expect(info).toMatchObject({ state: 'missing' })
   })
 
-  it('keeps pinned children in Pinned with parent context', () => {
+  it('keeps pinned children in Pinned without a parent badge', () => {
     const pinnedChild = { ...child, isPinned: true }
     const rows = buildRows(
       'none',
@@ -593,9 +592,9 @@ describe('buildRows workspace lineage nesting', () => {
     expect(rows[0]).toMatchObject({ type: 'header', key: 'pinned' })
     expect(rows[1]).toMatchObject({
       type: 'item',
-      worktree: { id: child.id },
-      parentLabel: 'coordinator'
+      worktree: { id: child.id }
     })
+    expect(rows[1]).not.toHaveProperty('parentLabel')
   })
 })
 

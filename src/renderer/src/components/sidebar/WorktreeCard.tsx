@@ -42,8 +42,6 @@ type WorktreeCardProps = {
   isMultiSelected?: boolean
   selectedWorktrees?: readonly Worktree[]
   hideRepoBadge?: boolean
-  parentLabel?: string
-  lineageState?: 'valid' | 'missing'
   lineageChildCount?: number
   lineageCollapsed?: boolean
   lineageChildren?: React.ReactNode
@@ -75,8 +73,6 @@ const WorktreeCard = React.memo(function WorktreeCard({
   onContextMenuSelect,
   nativeDragEnabled = true,
   hideRepoBadge,
-  parentLabel,
-  lineageState,
   lineageChildCount = 0,
   lineageCollapsed = false,
   lineageChildren,
@@ -353,12 +349,6 @@ const WorktreeCard = React.memo(function WorktreeCard({
     lineageChildCount === 1 ? 'child' : 'children'
   }`
   const showLineageChildChip = lineageChildCount > 0 && onLineageToggle !== undefined
-  const lineageParentTooltip =
-    lineageState === 'missing'
-      ? 'Parent workspace unavailable'
-      : parentLabel
-        ? `Parent workspace: ${parentLabel}`
-        : ''
 
   const handleDragStart = useCallback(
     (event: React.DragEvent<HTMLDivElement>) => {
@@ -595,36 +585,6 @@ const WorktreeCard = React.memo(function WorktreeCard({
             )}
 
             <CacheTimer worktreeId={worktree.id} />
-
-            {parentLabel && (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Badge
-                    variant="outline"
-                    aria-label={lineageParentTooltip}
-                    className={cn(
-                      'h-[16px] min-w-0 max-w-[7rem] justify-start px-1.5 text-[10px] font-medium rounded shrink gap-1 leading-none',
-                      lineageState === 'missing'
-                        ? 'text-muted-foreground border-border bg-muted/40'
-                        : 'text-muted-foreground border-border bg-accent/50'
-                    )}
-                  >
-                    <Workflow className="size-2.5 shrink-0" />
-                    {lineageState === 'missing' ? (
-                      <span className="max-w-[7rem] truncate">Missing parent</span>
-                    ) : (
-                      <>
-                        <span className="shrink-0 text-muted-foreground/80">parent:</span>
-                        <span className="min-w-0 truncate">{parentLabel}</span>
-                      </>
-                    )}
-                  </Badge>
-                </TooltipTrigger>
-                <TooltipContent side="right" sideOffset={8}>
-                  {lineageParentTooltip}
-                </TooltipContent>
-              </Tooltip>
-            )}
           </div>
 
           {hasDetails ? (

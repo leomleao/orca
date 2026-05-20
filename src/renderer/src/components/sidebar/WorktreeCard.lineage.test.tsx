@@ -93,33 +93,27 @@ function makeWorktree(overrides: Partial<Worktree> = {}): Worktree {
   }
 }
 
-describe('WorktreeCard lineage chip', () => {
+describe('WorktreeCard lineage indicators', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     worktreeCardProperties = []
   })
 
-  it('labels valid lineage as a parent workspace instead of a git source branch', async () => {
+  it('does not render parent lineage badge copy on workspace cards', async () => {
     const { default: WorktreeCard } = await import('./WorktreeCard')
 
     const markup = renderToStaticMarkup(
-      <WorktreeCard
-        worktree={makeWorktree()}
-        repo={makeRepo()}
-        isActive={false}
-        parentLabel="master"
-        lineageState="valid"
-      />
+      <WorktreeCard worktree={makeWorktree()} repo={makeRepo()} isActive={false} />
     )
 
-    expect(markup).toContain('aria-label="Parent workspace: master"')
-    expect(markup).toContain('parent:')
-    expect(markup).toContain('master')
-    expect(markup).toContain('overflow-hidden')
+    expect(markup).not.toContain('Parent workspace')
+    expect(markup).not.toContain('parent:')
     expect(markup).not.toContain('from master')
+    expect(markup).not.toContain('Missing parent')
+    expect(markup).toContain('overflow-hidden')
   })
 
-  it('preserves the missing-parent chip copy', async () => {
+  it('keeps the child workspace toggle chip', async () => {
     const { default: WorktreeCard } = await import('./WorktreeCard')
 
     const markup = renderToStaticMarkup(
@@ -127,12 +121,14 @@ describe('WorktreeCard lineage chip', () => {
         worktree={makeWorktree()}
         repo={makeRepo()}
         isActive={false}
-        parentLabel="Missing parent"
-        lineageState="missing"
+        lineageChildCount={1}
+        lineageCollapsed={false}
+        onLineageToggle={vi.fn()}
       />
     )
 
-    expect(markup).toContain('aria-label="Parent workspace unavailable"')
-    expect(markup).toContain('Missing parent')
+    expect(markup).toContain('aria-label="Hide 1 child workspace"')
+    expect(markup).toContain('1 child')
+    expect(markup).not.toContain('Parent workspace')
   })
 })

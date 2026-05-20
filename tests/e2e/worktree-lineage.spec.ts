@@ -1,170 +1,15 @@
 import type { Page } from '@stablyai/playwright-test'
 import { test, expect } from './helpers/orca-app'
 import { waitForActiveWorktree, waitForSessionReady } from './helpers/store'
-
-type LineageScenario = {
-  parentId: string
-  childId: string
-}
+import {
+  markWorkspaceTerminalSlept,
+  seedLineageScenario,
+  seedWorkspaceAgentStatus,
+  seedWorkspaceLiveTerminal
+} from './worktree-lineage-state'
 
 function worktreeOption(page: Page, worktreeId: string) {
   return page.locator(`[id="worktree-list-option-${encodeURIComponent(worktreeId)}"]`)
-}
-
-async function seedLineageScenario(page: Page): Promise<LineageScenario> {
-  return page.evaluate(() => {
-    const store = window.__store
-    if (!store) {
-      throw new Error('window.__store is not available')
-    }
-
-    const state = store.getState()
-    state.setActiveView('terminal')
-    state.setSidebarOpen(true)
-    state.setGroupBy('none')
-    state.setSortBy('recent')
-
-    const worktrees = Object.values(state.worktreesByRepo)
-      .flat()
-      .filter((worktree) => !worktree.isArchived)
-    if (worktrees.length < 2) {
-      throw new Error('Worktree lineage E2E needs at least two worktrees')
-    }
-
-    const [parent, child] = worktrees
-    if (!parent.instanceId || !child.instanceId) {
-      throw new Error('Worktree lineage E2E needs instance-stamped worktrees')
-    }
-    store.setState((current) => ({
-      worktreesByRepo: Object.fromEntries(
-        Object.entries(current.worktreesByRepo).map(([repoId, repoWorktrees]) => [
-          repoId,
-          repoWorktrees.map((worktree) => {
-            if (worktree.id === parent.id) {
-              return { ...worktree, displayName: 'E2E lineage parent', sortOrder: 0 }
-            }
-            if (worktree.id === child.id) {
-              return { ...worktree, displayName: 'E2E lineage child', sortOrder: 1 }
-            }
-            return worktree
-          })
-        ])
-      ),
-      worktreeLineageById: {
-        ...current.worktreeLineageById,
-        [child.id]: {
-          worktreeId: child.id,
-          worktreeInstanceId: child.instanceId,
-          parentWorktreeId: parent.id,
-          parentWorktreeInstanceId: parent.instanceId,
-          origin: 'manual',
-          capture: { source: 'manual-action', confidence: 'explicit' },
-          createdAt: Date.now()
-        }
-      }
-    }))
-
-    store.getState().setActiveWorktree(parent.id)
-    return { parentId: parent.id, childId: child.id }
-  })
-}
-
-async function seedWorkspaceAgentStatus(
-  page: Page,
-  worktreeId: string,
-  label: string
-): Promise<string> {
-  return page.evaluate(
-    ({ worktreeId, label }) => {
-      const store = window.__store
-      if (!store) {
-        throw new Error('window.__store is not available')
-      }
-
-      const state = store.getState()
-      if (!state.worktreeCardProperties.includes('inline-agents')) {
-        state.toggleWorktreeCardProperty('inline-agents')
-      }
-      if ((state.tabsByWorktree[worktreeId] ?? []).length === 0) {
-        state.createTab(worktreeId)
-      }
-
-      const next = store.getState()
-      const tab = next.tabsByWorktree[worktreeId]?.[0]
-      if (!tab) {
-        throw new Error(`Worktree lineage E2E failed to create a ${label} workspace tab`)
-      }
-
-      const prompt = `LINEAGE_${label}_AGENT_${Date.now()}`
-      const leafId = crypto.randomUUID()
-      const now = Date.now()
-      next.setAgentStatus(
-        `${tab.id}:${leafId}`,
-        { state: 'working', prompt, agentType: 'codex' },
-        'codex',
-        { updatedAt: now, stateStartedAt: now }
-      )
-      return prompt
-    },
-    { worktreeId, label }
-  )
-}
-
-async function seedWorkspaceLiveTerminal(page: Page, worktreeId: string): Promise<string> {
-  return page.evaluate((worktreeId) => {
-    const store = window.__store
-    if (!store) {
-      throw new Error('window.__store is not available')
-    }
-
-    const state = store.getState()
-    if ((state.tabsByWorktree[worktreeId] ?? []).length === 0) {
-      state.createTab(worktreeId)
-    }
-
-    const next = store.getState()
-    const tab = next.tabsByWorktree[worktreeId]?.[0]
-    if (!tab) {
-      throw new Error('Worktree lineage E2E failed to create a live terminal tab')
-    }
-
-    next.dropAgentStatusByWorktree(worktreeId)
-    store.setState((current) => ({
-      ptyIdsByTabId: {
-        ...current.ptyIdsByTabId,
-        [tab.id]: [`e2e-live-pty-${Date.now()}`]
-      },
-      browserTabsByWorktree: {
-        ...current.browserTabsByWorktree,
-        [worktreeId]: []
-      }
-    }))
-    return tab.id
-  }, worktreeId)
-}
-
-async function markWorkspaceTerminalSlept(
-  page: Page,
-  args: { worktreeId: string; tabId: string }
-): Promise<void> {
-  await page.evaluate(({ worktreeId, tabId }) => {
-    const store = window.__store
-    if (!store) {
-      throw new Error('window.__store is not available')
-    }
-
-    store.getState().dropAgentStatusByWorktree(worktreeId)
-    store.setState((current) => ({
-      ptyIdsByTabId: {
-        ...current.ptyIdsByTabId,
-        [tabId]: []
-      },
-      browserTabsByWorktree: {
-        ...current.browserTabsByWorktree,
-        [worktreeId]: []
-      }
-    }))
-  }, args)
 }
 
 test.describe('Worktree Lineage', () => {
@@ -230,6 +75,68 @@ test.describe('Worktree Lineage', () => {
     await expect(
       orcaPage.getByRole('menuitem', { name: 'Group under Active Workspace' })
     ).toHaveCount(0)
+  })
+
+  test('injects filtered parents structurally without showing a parent badge', async ({
+    orcaPage
+  }) => {
+    const { parentId, childId } = await seedLineageScenario(orcaPage)
+
+    await orcaPage.evaluate(
+      ({ parentId, childId }) => {
+        const store = window.__store
+        if (!store) {
+          throw new Error('window.__store is not available')
+        }
+        store.setState((current) => ({
+          worktreesByRepo: Object.fromEntries(
+            Object.entries(current.worktreesByRepo).map(([repoId, repoWorktrees]) => [
+              repoId,
+              repoWorktrees.map((worktree) =>
+                worktree.id === parentId
+                  ? {
+                      ...worktree,
+                      branch: worktree.branch || 'refs/heads/main',
+                      isMainWorktree: true
+                    }
+                  : worktree
+              )
+            ])
+          )
+        }))
+        const state = store.getState()
+        state.setHideDefaultBranchWorkspace(true)
+        state.setShowActiveOnly(true)
+        state.setActiveWorktree(childId)
+      },
+      { parentId, childId }
+    )
+
+    const parentRow = worktreeOption(orcaPage, parentId)
+    const childRow = worktreeOption(orcaPage, childId)
+
+    await expect(parentRow).toContainText('E2E lineage parent')
+    await expect(childRow).toContainText('E2E lineage child')
+    await expect(orcaPage.getByText('from E2E lineage parent')).toHaveCount(0)
+
+    const positions = await orcaPage.evaluate(
+      ({ parentId, childId }) => {
+        const parent = document.getElementById(
+          `worktree-list-option-${encodeURIComponent(parentId)}`
+        )
+        const child = document.getElementById(`worktree-list-option-${encodeURIComponent(childId)}`)
+        if (!parent || !child) {
+          return null
+        }
+        return {
+          parentTop: parent.getBoundingClientRect().top,
+          childTop: child.getBoundingClientRect().top
+        }
+      },
+      { parentId, childId }
+    )
+    expect(positions).not.toBeNull()
+    expect(positions!.childTop).toBeGreaterThan(positions!.parentTop)
   })
 
   test('updates nested child preview status when the child terminal sleeps', async ({
