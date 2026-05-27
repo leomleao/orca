@@ -2764,6 +2764,10 @@ export class OrcaRuntimeService {
     this.commitMessageAgentEnv = resolvers
   }
 
+  getCommitMessageAgentEnvironmentResolvers(): CommitMessageAgentEnvironmentResolvers | undefined {
+    return this.commitMessageAgentEnv ?? undefined
+  }
+
   async startMobileDictation(params: {
     dictationId: string
     modelId?: string
@@ -10177,6 +10181,14 @@ export class OrcaRuntimeService {
   private invalidateResolvedWorktreeCache(): void {
     this.resolvedWorktreeGeneration += 1
     this.resolvedWorktreeCache = null
+  }
+
+  /** Invalidate the worktree cache and tell the renderer to re-list, after an
+   *  out-of-band branch change (e.g. auto-rename-from-work) so the new branch
+   *  name surfaces without waiting for the next ambient refresh. */
+  notifyBranchRenamed(repoId: string): void {
+    this.invalidateResolvedWorktreeCache()
+    this.notifier?.worktreesChanged(repoId)
   }
 
   private recordPtyWorktree(
