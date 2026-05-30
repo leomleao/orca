@@ -1,8 +1,9 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { RefreshCw } from 'lucide-react'
 import { toast } from 'sonner'
 import type { CliInstallStatus } from '../../../../shared/cli-install-types'
 import { useWindowsTerminalCapabilities } from '@/lib/windows-terminal-capabilities'
+import { useMountedRef } from '@/hooks/useMountedRef'
 import { Button } from '../ui/button'
 import {
   Dialog,
@@ -26,18 +27,11 @@ export function WslCliRegistration({
   const [loading, setLoading] = useState(false)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [busyAction, setBusyAction] = useState<'install' | 'remove' | null>(null)
-  const mountedRef = useRef(true)
+  const mountedRef = useMountedRef()
   const { wslAvailable } = useWindowsTerminalCapabilities(currentPlatform === 'win32')
   const showWslCli = currentPlatform === 'win32' && wslAvailable
 
-  useEffect(() => {
-    mountedRef.current = true
-    return () => {
-      mountedRef.current = false
-    }
-  }, [])
-
-  const refreshStatus = async (): Promise<void> => {
+  const refreshStatus = useCallback(async (): Promise<void> => {
     setLoading(true)
     try {
       const next = await window.api.cli.getWslInstallStatus()
@@ -53,13 +47,13 @@ export function WslCliRegistration({
         setLoading(false)
       }
     }
-  }
+  }, [mountedRef])
 
   useEffect(() => {
     if (showWslCli) {
       void refreshStatus()
     }
-  }, [showWslCli])
+  }, [refreshStatus, showWslCli])
 
   if (!showWslCli) {
     return null

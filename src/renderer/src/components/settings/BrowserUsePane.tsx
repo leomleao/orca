@@ -1,5 +1,5 @@
 /* eslint-disable max-lines -- Why: Browser Use setup keeps enablement, CLI registration, skill install, cookie import, examples, and interaction tracking in one pane so the three-step setup state stays coherent. */
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Import, Loader2, MousePointerClick } from 'lucide-react'
 import { toast } from 'sonner'
 import type { CliInstallStatus } from '../../../../shared/cli-install-types'
@@ -17,6 +17,7 @@ import {
   GLOBAL_AGENT_SKILL_SOURCE_KINDS,
   useInstalledAgentSkill
 } from '@/hooks/useInstalledAgentSkills'
+import { useMountedRef } from '@/hooks/useMountedRef'
 import { Button } from '../ui/button'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip'
 import {
@@ -58,20 +59,16 @@ export function BrowserUseSetup({
   const [cliStatus, setCliStatus] = useState<CliInstallStatus | null>(null)
   const [cliLoading, setCliLoading] = useState(true)
   const [cliBusy, setCliBusy] = useState(false)
-  const mountedRef = useRef(true)
+  const mountedRef = useMountedRef()
 
-  useEffect(() => {
-    mountedRef.current = true
-    return () => {
-      mountedRef.current = false
-    }
-  }, [])
-
-  const handleCliStatusChange = useCallback((nextStatus: CliInstallStatus): void => {
-    if (mountedRef.current) {
-      setCliStatus(nextStatus)
-    }
-  }, [])
+  const handleCliStatusChange = useCallback(
+    (nextStatus: CliInstallStatus): void => {
+      if (mountedRef.current) {
+        setCliStatus(nextStatus)
+      }
+    },
+    [mountedRef]
+  )
 
   // Why: the toggle gates only whether we show the setup instructions. We
   // persist it in localStorage instead of global settings because it has no
@@ -102,7 +99,7 @@ export function BrowserUseSetup({
         setCliLoading(false)
       }
     }
-  }, [handleCliStatusChange])
+  }, [handleCliStatusChange, mountedRef])
 
   useEffect(() => {
     // Why: skip IPC work when the feature is toggled off — the component

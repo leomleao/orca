@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { FolderOpen, RefreshCw } from 'lucide-react'
 import { toast } from 'sonner'
 import type { CliInstallStatus } from '../../../../shared/cli-install-types'
@@ -14,6 +14,7 @@ import {
   GLOBAL_AGENT_SKILL_SOURCE_KINDS,
   useInstalledAgentSkill
 } from '@/hooks/useInstalledAgentSkills'
+import { useMountedRef } from '@/hooks/useMountedRef'
 import { Button } from '../ui/button'
 import {
   Dialog,
@@ -64,7 +65,7 @@ export function CliSection({ currentPlatform }: CliSectionProps): React.JSX.Elem
   const [loading, setLoading] = useState(true)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [busyAction, setBusyAction] = useState<'install' | 'remove' | null>(null)
-  const mountedRef = useRef(true)
+  const mountedRef = useMountedRef()
   const {
     installed: cliSkillDetected,
     loading: cliSkillLoading,
@@ -74,18 +75,14 @@ export function CliSection({ currentPlatform }: CliSectionProps): React.JSX.Elem
     sourceKinds: GLOBAL_AGENT_SKILL_SOURCE_KINDS
   })
 
-  useEffect(() => {
-    mountedRef.current = true
-    return () => {
-      mountedRef.current = false
-    }
-  }, [])
-
-  const handleStatusChange = useCallback((nextStatus: CliInstallStatus): void => {
-    if (mountedRef.current) {
-      setStatus(nextStatus)
-    }
-  }, [])
+  const handleStatusChange = useCallback(
+    (nextStatus: CliInstallStatus): void => {
+      if (mountedRef.current) {
+        setStatus(nextStatus)
+      }
+    },
+    [mountedRef]
+  )
 
   const refreshStatus = useCallback(async (): Promise<void> => {
     setLoading(true)
@@ -100,7 +97,7 @@ export function CliSection({ currentPlatform }: CliSectionProps): React.JSX.Elem
         setLoading(false)
       }
     }
-  }, [handleStatusChange])
+  }, [handleStatusChange, mountedRef])
 
   useEffect(() => {
     void refreshStatus()
