@@ -1950,9 +1950,12 @@ export type GlobalSettings = {
   workspaceDirHistory?: OrcaWorkspaceLayout[]
   refreshLocalBaseRefOnWorktreeCreate: boolean
   /** When enabled, Orca renames a workspace's auto-generated creature branch to
-   *  a short name derived from the first prompt once work begins. Opt-in;
-   *  uses the same agent configured for AI commit messages. */
+   *  a short name derived from the first prompt once work begins. Users can
+   *  still turn this off from global Git settings. */
   autoRenameBranchFromWork: boolean
+  /** One-shot migration guard for the default-on rollout. Existing profiles
+   *  without the guard are flipped on once; later explicit opt-outs stick. */
+  autoRenameBranchFromWorkDefaultedOn?: boolean
   branchPrefix: 'git-username' | 'custom' | 'none'
   branchPrefixCustom: string
   enableGitHubAttribution: boolean

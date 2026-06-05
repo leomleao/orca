@@ -88,6 +88,7 @@ import { getRepoIdFromWorktreeId, getWorktreePathBasenameFromId } from '../share
 import { normalizeRuntimePathForComparison } from '../shared/cross-platform-path'
 import { normalizeTerminalQuickCommands } from '../shared/terminal-quick-commands'
 import { normalizeTaskProviderSettings } from '../shared/task-providers'
+import { normalizeAutoRenameBranchFromWorkDefaultOn } from '../shared/auto-rename-branch-from-work-settings'
 import { normalizeOpenInApplications } from '../shared/open-in-applications'
 import { normalizeTerminalShortcutPolicy } from '../shared/keybindings'
 import { normalizeAppIconId } from '../shared/app-icon'
@@ -1816,6 +1817,13 @@ export class Store {
         const migratedExperimentalActivity = experimentalActivityDefaultedOffForAllUsers
           ? (parsed.settings?.experimentalActivity ?? false)
           : false
+        const autoRenameBranchFromWorkDefaultedOn =
+          parsed.settings?.autoRenameBranchFromWorkDefaultedOn === true
+        // Why: default-on rollout should activate old profiles once, but a
+        // later Settings opt-out must survive reloads.
+        const migratedAutoRenameBranchFromWork = normalizeAutoRenameBranchFromWorkDefaultOn(
+          parsed.settings
+        )
         const rawTaskProviderSettings = normalizeTaskProviderSettings({
           visibleTaskProviders: parsed.settings?.visibleTaskProviders,
           defaultTaskSource: parsed.settings?.defaultTaskSource
@@ -1850,6 +1858,9 @@ export class Store {
         if (!visibleTaskProvidersDefaultedForJira) {
           this.loadNeedsSave = true
         }
+        if (!autoRenameBranchFromWorkDefaultedOn) {
+          this.loadNeedsSave = true
+        }
         const normalizedOnboarding = normalizeLoadedOnboardingState(
           parsed.onboarding,
           defaults.onboarding
@@ -1881,6 +1892,7 @@ export class Store {
               (process.platform === 'linux' && migratePrimarySelectionPlatformDefault),
             primarySelectionMiddleClickPasteDefaultedForTerminalDefaults:
               primarySelectionDefaultedForTerminalDefaults || stampPrimarySelectionTerminalDefaults,
+            ...migratedAutoRenameBranchFromWork,
             experimentalActivity: migratedExperimentalActivity,
             experimentalActivityDefaultedOffForAllUsers: true,
             terminalMacOptionAsAlt: migratedOptionAsAlt,
@@ -3024,6 +3036,9 @@ export class Store {
       if ('visibleTaskProviders' in updates) {
         sanitizedUpdates.visibleTaskProvidersDefaultedForJira = true
       }
+    }
+    if ('autoRenameBranchFromWork' in updates || 'autoRenameBranchFromWorkDefaultedOn' in updates) {
+      sanitizedUpdates.autoRenameBranchFromWorkDefaultedOn = true
     }
     if ('openInApplications' in updates) {
       sanitizedUpdates.openInApplications = normalizeOpenInApplications(updates.openInApplications)

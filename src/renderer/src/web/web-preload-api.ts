@@ -38,6 +38,7 @@ import { createE2EConfig } from '../../../shared/e2e-config'
 import { relativePathInsideRoot } from '../../../shared/cross-platform-path'
 import { toRuntimeWorktreeSelector } from '../runtime/runtime-worktree-selector'
 import { normalizeDisabledTuiAgents } from '../../../shared/tui-agent-selection'
+import { normalizeAutoRenameBranchFromWorkDefaultOn } from '../../../shared/auto-rename-branch-from-work-settings'
 import type { RateLimitState } from '../../../shared/rate-limit-types'
 import type { RuntimeStatus, RuntimeSyncWindowGraph } from '../../../shared/runtime-types'
 import {
@@ -435,7 +436,13 @@ function createWebPreloadApi(): Partial<PreloadApi> {
         if (updates.activeRuntimeEnvironmentId === null) {
           disconnectActiveRuntimeEnvironment()
         }
-        const next = mergeSettings(getStoredSettings(), updates)
+        const sanitizedUpdates = { ...updates }
+        if ('autoRenameBranchFromWorkDefaultedOn' in sanitizedUpdates) {
+          sanitizedUpdates.autoRenameBranchFromWorkDefaultedOn = true
+        }
+        const next = mergeSettings(getStoredSettings(), sanitizedUpdates, {
+          preserveAutoRenameBranchFromWorkUpdate: 'autoRenameBranchFromWork' in sanitizedUpdates
+        })
         writeJson(SETTINGS_STORAGE_KEY, next)
         return next
       },
@@ -2369,7 +2376,27 @@ function updateEnvironmentFromResponse(
 function getStoredSettings(): GlobalSettings {
   const environment = (activeEnvironment = activeEnvironment ?? readStoredWebRuntimeEnvironment())
   const defaults = getDefaultSettings('~')
+  const rawStoredSettings = window.localStorage.getItem(SETTINGS_STORAGE_KEY)
   const stored = readJson<Partial<GlobalSettings>>(SETTINGS_STORAGE_KEY, {})
+  const migratedStored = {
+    ...stored,
+    ...normalizeAutoRenameBranchFromWorkDefaultOn(stored)
+  }
+  if (
+    rawStoredSettings &&
+    (stored.autoRenameBranchFromWork !== migratedStored.autoRenameBranchFromWork ||
+      stored.autoRenameBranchFromWorkDefaultedOn !==
+        migratedStored.autoRenameBranchFromWorkDefaultedOn)
+  ) {
+    try {
+      const parsed = JSON.parse(rawStoredSettings) as unknown
+      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+        writeJson(SETTINGS_STORAGE_KEY, migratedStored)
+      }
+    } catch {
+      // Keep readJson's invalid-JSON fallback non-destructive.
+    }
+  }
   return mergeSettings(
     {
       ...defaults,
@@ -2377,7 +2404,7 @@ function getStoredSettings(): GlobalSettings {
       rightSidebarOpenByDefault: false,
       activeRuntimeEnvironmentId: environment?.id ?? null
     },
-    stored
+    migratedStored
   )
 }
 
@@ -2495,9 +2522,13 @@ function mergeContextualTourSeenIds(
   return [...merged]
 }
 
-function mergeSettings(base: GlobalSettings, updates: Partial<GlobalSettings>): GlobalSettings {
+function mergeSettings(
+  base: GlobalSettings,
+  updates: Partial<GlobalSettings>,
+  options: { preserveAutoRenameBranchFromWorkUpdate?: boolean } = {}
+): GlobalSettings {
   const defaults = getDefaultSettings('~')
-  return {
+  const merged = {
     ...base,
     ...updates,
     notifications: {
@@ -2516,6 +2547,12 @@ function mergeSettings(base: GlobalSettings, updates: Partial<GlobalSettings>): 
       ...updates.voice
     } as NonNullable<GlobalSettings['voice']>,
     activeRuntimeEnvironmentId: activeEnvironment?.id ?? updates.activeRuntimeEnvironmentId ?? null
+  }
+  return {
+    ...merged,
+    ...normalizeAutoRenameBranchFromWorkDefaultOn(merged, {
+      preserveExplicitValue: options.preserveAutoRenameBranchFromWorkUpdate
+    })
   }
 }
 

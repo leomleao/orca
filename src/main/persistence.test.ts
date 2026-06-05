@@ -1214,6 +1214,51 @@ describe('Store', () => {
     expect(store.getSettings().commitMessageAi?.customPrompt).toBe('Use Conventional Commits.')
   })
 
+  it('migrates first-work branch auto-rename on for existing profiles once', async () => {
+    writeDataFile({
+      schemaVersion: 1,
+      repos: [],
+      worktreeMeta: {},
+      settings: { autoRenameBranchFromWork: false },
+      ui: {},
+      githubCache: { pr: {}, issue: {} },
+      workspaceSession: {}
+    })
+
+    const store = await createStore()
+
+    expect(store.getSettings().autoRenameBranchFromWork).toBe(true)
+    expect(store.getSettings().autoRenameBranchFromWorkDefaultedOn).toBe(true)
+  })
+
+  it('preserves first-work branch auto-rename opt-outs after the default-on migration', async () => {
+    writeDataFile({
+      schemaVersion: 1,
+      repos: [],
+      worktreeMeta: {},
+      settings: {
+        autoRenameBranchFromWork: false,
+        autoRenameBranchFromWorkDefaultedOn: true
+      },
+      ui: {},
+      githubCache: { pr: {}, issue: {} },
+      workspaceSession: {}
+    })
+
+    const store = await createStore()
+
+    expect(store.getSettings().autoRenameBranchFromWork).toBe(false)
+    expect(store.getSettings().autoRenameBranchFromWorkDefaultedOn).toBe(true)
+  })
+
+  it('does not let settings updates clear the first-work branch auto-rename migration guard', async () => {
+    const store = await createStore()
+
+    const updated = store.updateSettings({ autoRenameBranchFromWorkDefaultedOn: false })
+
+    expect(updated.autoRenameBranchFromWorkDefaultedOn).toBe(true)
+  })
+
   it('merges rollback commit-message AI writes into existing source-control AI on load', async () => {
     writeDataFile({
       schemaVersion: 1,
