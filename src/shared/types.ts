@@ -1067,6 +1067,7 @@ export type PRConflictSummary = {
   baseCommit: string
   commitsBehind: number
   files: string[]
+  localMergeState?: 'clean'
 }
 
 export type GitHubRepositoryIdentity = { owner: string; repo: string }
