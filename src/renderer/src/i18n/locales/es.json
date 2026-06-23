@@ -6219,7 +6219,19 @@
           "ab20575a8a": "apagado",
           "ab3a1f9068": "wsl.exe",
           "ask_before_closing_running_terminals_title": "Ask Before Closing Running Terminals",
-          "ask_before_closing_running_terminals_description": "Show a confirmation before closing a terminal that has a running command or agent."
+          "ask_before_closing_running_terminals_description": "Show a confirmation before closing a terminal that has a running command or agent.",
+          "scrollSpeed": {
+            "title": "Velocidad de desplazamiento",
+            "description": "Ajusta el desplazamiento normal del terminal, el desplazamiento rápido con modificador y la velocidad de rueda en TUI de pantalla completa.",
+            "helper": "Ajusta cómo se siente la entrada de la rueda en el historial y en apps de terminal compatibles con mouse.",
+            "reset": "Restablecer",
+            "normal": "Normal",
+            "normalDescription": "Multiplicador de rueda del historial.",
+            "fast": "Rápido",
+            "fastDescription": "Multiplicador adicional al desplazarse con una tecla modificadora.",
+            "tui": "TUI",
+            "tuiDescription": "Eventos discretos de rueda para apps de terminal de pantalla completa."
+          }
         },
         "TerminalSettingsPreview": {
           "a63953a48a": "Vista previa del tema {{value0}}",
@@ -7855,7 +7867,11 @@
               "keyword_custom": "custom"
             },
             "ask_before_closing_running_terminals_title": "Ask Before Closing Running Terminals",
-            "ask_before_closing_running_terminals_description": "Show a confirmation before closing a terminal that has a running command or agent."
+            "ask_before_closing_running_terminals_description": "Show a confirmation before closing a terminal that has a running command or agent.",
+            "scrollSpeed": {
+              "title": "Velocidad de desplazamiento",
+              "description": "Ajusta el desplazamiento normal del terminal, el desplazamiento rápido con modificador y la velocidad de rueda en TUI de pantalla completa."
+            }
           },
           "windows": {
             "search": {
@@ -9115,7 +9131,10 @@
             "hideEmptySessions": "Hide empty sessions",
             "workspaceScope": "Workspace",
             "worktreeScope": "Worktree",
-            "globalScope": "Global"
+            "globalScope": "Global",
+            "projectScope": "Proyecto",
+            "currentProjectLower": "proyecto actual",
+            "project": "Proyecto"
           },
           "AiVaultSessionDetails": {
             "updated": "Updated",

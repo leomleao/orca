@@ -2313,7 +2313,7 @@
           "TerminalContextMenu": {
             "b4cdd9314e": "クリアスクリーン",
             "8c17d6786d": "ペインを閉じる",
-            "copyTerminalId": "Copy Terminal ID",
+            "copyTerminalId": "ターミナル ID をコピー",
             "2cf85a6a55": "ペインIDのコピー",
             "39809d152f": "タイトルを設定…",
             "06c2b0f043": "ペインのサイズを均等化する",
@@ -2405,9 +2405,9 @@
                     "a29b9faa01": "ペイン ID がコピーされました",
                     "terminal": {
                       "id": {
-                        "copied": "Terminal ID をコピーしました",
+                        "copied": "ターミナル ID をコピーしました",
                         "copy": {
-                          "failed": "Terminal ID をコピーできません"
+                          "failed": "ターミナル ID をコピーできません"
                         }
                       }
                     }
@@ -6241,7 +6241,19 @@
           "ab20575a8a": "オフ",
           "ab3a1f9068": "wsl.exe",
           "ask_before_closing_running_terminals_title": "Ask Before Closing Running Terminals",
-          "ask_before_closing_running_terminals_description": "Show a confirmation before closing a terminal that has a running command or agent."
+          "ask_before_closing_running_terminals_description": "Show a confirmation before closing a terminal that has a running command or agent.",
+          "scrollSpeed": {
+            "title": "スクロール速度",
+            "description": "通常のターミナルスクロールバック、修飾キーでの高速スクロール、全画面 TUI のホイール速度を調整します。",
+            "helper": "ホイール入力の感触をスクロールバックとマウス対応のターミナルアプリで調整します。",
+            "reset": "リセット",
+            "normal": "通常",
+            "normalDescription": "スクロールバックのホイール倍率。",
+            "fast": "高速",
+            "fastDescription": "修飾キーを押しながらスクロールするときの追加倍率。",
+            "tui": "TUI",
+            "tuiDescription": "全画面ターミナルアプリ向けの離散的なホイール通知。"
+          }
         },
         "TerminalSettingsPreview": {
           "a63953a48a": "{{value0}} テーマのプレビュー",
@@ -7877,7 +7889,11 @@
             "0fe0073f0c": "新規ペインとライブ アップデートのデフォルトの terminal フォント サイズ。",
             "5930244899": "フォントサイズ",
             "ask_before_closing_running_terminals_title": "Ask Before Closing Running Terminals",
-            "ask_before_closing_running_terminals_description": "Show a confirmation before closing a terminal that has a running command or agent."
+            "ask_before_closing_running_terminals_description": "Show a confirmation before closing a terminal that has a running command or agent.",
+            "scrollSpeed": {
+              "title": "スクロール速度",
+              "description": "通常のターミナルスクロールバック、修飾キーでの高速スクロール、全画面 TUI のホイール速度を調整します。"
+            }
           },
           "windows": {
             "search": {
@@ -9115,7 +9131,10 @@
             "hideEmptySessions": "Hide empty sessions",
             "workspaceScope": "ワークスペース",
             "worktreeScope": "Worktree",
-            "globalScope": "Global"
+            "globalScope": "Global",
+            "projectScope": "プロジェクト",
+            "currentProjectLower": "現在のプロジェクト",
+            "project": "プロジェクト"
           },
           "AiVaultSessionDetails": {
             "updated": "Updated",
