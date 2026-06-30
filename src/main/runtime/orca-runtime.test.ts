@@ -1,10 +1,10 @@
 /* eslint-disable max-lines -- Why: runtime behavior is stateful and cross-cutting, so these tests stay in one file to preserve the end-to-end invariants around handles, waits, and graph sync. */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { EventEmitter } from 'events'
-import { randomUUID } from 'crypto'
-import { lstat, mkdir, mkdtemp, rm, writeFile } from 'fs/promises'
-import { homedir, tmpdir } from 'os'
-import { join } from 'path'
+import { EventEmitter } from 'node:events'
+import { randomUUID } from 'node:crypto'
+import { lstat, mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
+import { homedir, tmpdir } from 'node:os'
+import { join } from 'node:path'
 import { ipcMain } from 'electron'
 import type {
   FolderWorkspace,

@@ -1341,7 +1341,7 @@ function sanitizeRecentTabIds(recent: string[] | undefined, tabOrder: string[]):
     seen.add(id)
     reversed.push(id)
   }
-  return reversed.reverse()
+  return reversed.toReversed()
 }
 
 function pushRecentTabId(recent: string[] | undefined, tabId: string): string[] {

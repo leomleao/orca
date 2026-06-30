@@ -12,10 +12,10 @@ import {
   copyFileSync,
   statSync,
   realpathSync
-} from 'fs'
-import { writeFile, rename, mkdir, rm, copyFile } from 'fs/promises'
-import { join, dirname, isAbsolute, resolve, sep } from 'path'
-import { homedir } from 'os'
+} from 'node:fs'
+import { writeFile, rename, mkdir, rm, copyFile } from 'node:fs/promises'
+import { join, dirname, isAbsolute, resolve, sep } from 'node:path'
+import { homedir } from 'node:os'
 import { randomUUID } from 'node:crypto'
 import type {
   Automation,

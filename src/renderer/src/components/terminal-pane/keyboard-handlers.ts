@@ -12,7 +12,7 @@ import {
   type KeybindingPlatform,
   type TerminalShortcutPolicy
 } from '../../../../shared/keybindings'
-import { type PaneCwdMap } from './resolve-split-cwd'
+import type { PaneCwdMap } from './resolve-split-cwd'
 import { keyboardEventBelongsToScope } from './terminal-keyboard-scope'
 import { normalizeSelectedTextForFileSearch } from '@/lib/file-search-selection'
 import { isFindQueryTooLarge } from '@/lib/find-query-bounds'

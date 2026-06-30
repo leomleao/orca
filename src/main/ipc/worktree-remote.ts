@@ -8,9 +8,9 @@
 // cohesive flow would split awkwardly.
 
 import type { BrowserWindow } from 'electron'
-import { posix, win32 } from 'path'
-import { existsSync } from 'fs'
-import { randomUUID } from 'crypto'
+import { posix, win32 } from 'node:path'
+import { existsSync } from 'node:fs'
+import { randomUUID } from 'node:crypto'
 import type { Store } from '../persistence'
 import type {
   AutomationWorkspaceProvenance,

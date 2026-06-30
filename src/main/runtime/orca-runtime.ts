@@ -39,10 +39,10 @@ import {
   getClonePathComparisonKey
 } from '../git/repo-clone-path'
 import { getGitCloneFailureMessage } from '../../shared/git-clone-failure-message'
-import { createHash, randomUUID } from 'crypto'
-import { homedir } from 'os'
-import { isAbsolute, join, resolve } from 'path'
-import { mkdir, readFile, readdir, rm, stat } from 'fs/promises'
+import { createHash, randomUUID } from 'node:crypto'
+import { homedir } from 'node:os'
+import { isAbsolute, join, resolve } from 'node:path'
+import { mkdir, readFile, readdir, rm, stat } from 'node:fs/promises'
 import { OrchestrationDb } from './orchestration/db'
 import { formatMessagesForInjection } from './orchestration/formatter'
 import type {
@@ -9650,7 +9650,7 @@ export class OrcaRuntimeService {
     const alreadyKnownCount = results.filter((entry) => entry.status === 'already-known').length
     const failedCount = results.filter((entry) => entry.status === 'failed').length
     if (importedCount + alreadyKnownCount === 0) {
-      for (const group of groupResolver.getCreatedGroups().reverse()) {
+      for (const group of groupResolver.getCreatedGroups().toReversed()) {
         this.store.deleteProjectGroup?.(group.id)
       }
     }

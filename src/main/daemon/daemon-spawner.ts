@@ -1,5 +1,5 @@
-import { createHash } from 'crypto'
-import { join } from 'path'
+import { createHash } from 'node:crypto'
+import { join } from 'node:path'
 import { PROTOCOL_VERSION } from './types'
 
 export type DaemonConnectionInfo = {

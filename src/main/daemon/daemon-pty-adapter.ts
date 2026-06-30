@@ -1,8 +1,8 @@
 /* oxlint-disable max-lines -- Why: history error-logging .catch() chains add ~10 lines of
 safety wiring spread across spawn/event-routing; splitting would scatter tightly coupled
 adapter ↔ history lifecycle logic. */
-import { basename } from 'path'
-import { existsSync } from 'fs'
+import { basename } from 'node:path'
+import { existsSync } from 'node:fs'
 import { DaemonClient } from './client'
 import { getMacDaemonSystemResolverHealth } from './daemon-health'
 import { HistoryManager } from './history-manager'

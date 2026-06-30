@@ -1,8 +1,8 @@
 /* oxlint-disable max-lines */
 import type { BrowserWindow } from 'electron'
 import { ipcMain } from 'electron'
-import { readFile, stat } from 'fs/promises'
-import { randomUUID } from 'crypto'
+import { readFile, stat } from 'node:fs/promises'
+import { randomUUID } from 'node:crypto'
 import type { Store } from '../persistence'
 import { isFolderRepo } from '../../shared/repo-kind'
 import {

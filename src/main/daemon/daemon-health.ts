@@ -1,9 +1,9 @@
 /* oxlint-disable max-lines -- Why: pid validation shares process-identity
 helpers with kill escalation so the SIGKILL safety checks stay co-located. */
-import { execFile, execFileSync } from 'child_process'
-import { existsSync, readFileSync, unlinkSync } from 'fs'
-import { connect, type Socket } from 'net'
-import { promisify } from 'util'
+import { execFile, execFileSync } from 'node:child_process'
+import { existsSync, readFileSync, unlinkSync } from 'node:fs'
+import { connect, type Socket } from 'node:net'
+import { promisify } from 'node:util'
 import {
   getProcessOutputFields,
   iterateProcessOutputLines

@@ -188,9 +188,9 @@ import { resolveSourceControlLaunchPlatform } from '@/lib/source-control-launch-
 import { activateAndRevealWorktree } from '@/lib/worktree-activation'
 import { buildFixBrokenChecksPrompt, getBrokenChecks } from '@/components/pr-checks-fix-prompt'
 import { resolveSourceControlActionRecipe } from '../../../shared/source-control-ai'
-import {
-  type SourceControlActionRecipe,
-  type SourceControlLaunchActionId
+import type {
+  SourceControlActionRecipe,
+  SourceControlLaunchActionId
 } from '../../../shared/source-control-ai-actions'
 import {
   saveSourceControlActionRecipe,

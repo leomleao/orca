@@ -2,13 +2,13 @@
 ~70 lines of scanner/promise wiring to spawn(). Splitting the method would scatter
 tightly coupled PTY lifecycle logic (scan → ready → write → exit cleanup) across
 files without a cleaner ownership seam. */
-import { basename, delimiter } from 'path'
-import { win32 as pathWin32 } from 'path'
+import { basename, delimiter } from 'node:path'
+import { win32 as pathWin32 } from 'node:path'
 import { resolveWindowsShellLaunchArgs } from './windows-shell-args'
 import { resolveEffectiveWindowsPowerShell } from './windows-powershell'
 import { buildWindowsPowerShellSpawnAttempts } from './windows-shell-fallback-chain'
 import { resolveProcessCwd } from './process-cwd'
-import { existsSync } from 'fs'
+import { existsSync } from 'node:fs'
 import * as pty from 'node-pty'
 import { parseWslPath, isWslAvailable } from '../wsl'
 import { splitWorktreeId } from '../../shared/worktree-id'

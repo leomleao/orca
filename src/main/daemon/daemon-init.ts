@@ -6,11 +6,11 @@ it would scatter the "swap the running provider atomically" invariant across
 files with no cleaner ownership seam: restart, replaceDaemonProvider, and the
 module-level spawner/adapter singletons must stay co-located so a future
 change cannot leave them drifting out of sync. */
-import { join } from 'path'
+import { join } from 'node:path'
 import { app } from 'electron'
-import { mkdirSync, existsSync, unlinkSync, writeFileSync } from 'fs'
-import { fork } from 'child_process'
-import { connect } from 'net'
+import { mkdirSync, existsSync, unlinkSync, writeFileSync } from 'node:fs'
+import { fork } from 'node:child_process'
+import { connect } from 'node:net'
 import {
   DaemonSpawner,
   getDaemonPidPath,

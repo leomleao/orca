@@ -9,10 +9,10 @@
  * gracefully degraded.
  */
 import { build } from 'esbuild'
-import { createHash } from 'crypto'
-import { mkdirSync, readFileSync, writeFileSync } from 'fs'
-import { join, dirname } from 'path'
-import { fileURLToPath } from 'url'
+import { createHash } from 'node:crypto'
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { join, dirname } from 'node:path'
+import { fileURLToPath } from 'node:url'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 // Why: the script lives under config/scripts, so go two levels up to reach the repo root.

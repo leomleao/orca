@@ -2244,7 +2244,7 @@ export const createEditorSlice: StateCreator<AppState, [], [], EditorSlice> = (s
 
       const closingFiles = s.openFiles.filter((f) => f.worktreeId === activeWorktreeId)
       let nextRecentClosed = s.recentlyClosedEditorTabsByWorktree[activeWorktreeId] ?? []
-      for (const f of [...closingFiles].reverse()) {
+      for (const f of [...closingFiles].toReversed()) {
         // Why: untitled non-dirty files are deleted from disk after close —
         // skip them so the reopen stack doesn't reference vanished paths.
         // Preview tabs are ephemeral views that shouldn't pollute the stack.

@@ -5,7 +5,7 @@
    across files would duplicate the vi.hoisted boundary mocks with no cleaner
    ownership seam. */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { join } from 'path'
+import { join } from 'node:path'
 import { PROTOCOL_VERSION } from './types'
 
 const FAKE_USER_DATA_PATH = '/fake/userData'

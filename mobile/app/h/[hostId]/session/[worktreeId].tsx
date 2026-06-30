@@ -83,10 +83,10 @@ import {
   triggerError,
   triggerEdgeBump
 } from '../../../../src/platform/haptics'
-import {
-  type TerminalKeyboardAvoidanceMetrics,
-  type TerminalModes,
-  type TerminalWebViewHandle
+import type {
+  TerminalKeyboardAvoidanceMetrics,
+  TerminalModes,
+  TerminalWebViewHandle
 } from '../../../../src/terminal/TerminalWebView'
 import { isTerminalOscLinkRanges } from '../../../../src/terminal/terminal-osc-link-ranges'
 import { useTerminalViewportRefit } from '../../../../src/terminal/terminal-viewport-refit'
