@@ -102,6 +102,8 @@ type NewWorkspaceComposerCardProps = {
   showAddProjectButton?: boolean
   name: string
   onNameValueChange: (value: string) => void
+  branchNameOverride: string | undefined
+  onBranchNameOverrideChange: (value: string | undefined) => void
   onSmartGitHubItemSelect: (item: GitHubWorkItem) => void
   onSmartGitLabItemSelect: (item: GitLabWorkItem) => void
   onSmartBranchSelect: (refName: string, localBranchName: string) => void
@@ -564,6 +566,8 @@ export default function NewWorkspaceComposerCard({
   showAddProjectButton = true,
   name,
   onNameValueChange,
+  branchNameOverride,
+  onBranchNameOverrideChange,
   onSmartGitHubItemSelect,
   onSmartGitLabItemSelect,
   onSmartBranchSelect,
@@ -620,6 +624,7 @@ export default function NewWorkspaceComposerCard({
   const disabledTuiAgents = useAppStore((s) => s.settings?.disabledTuiAgents ?? [])
   const updateSettings = useAppStore((s) => s.updateSettings)
   const nameInputFocusFrameRef = React.useRef<number | null>(null)
+  const branchNameInputId = React.useId()
   const submitShortcutModifierLabel = getScreenSubmitModifierLabel()
   const selectedRepoName = React.useMemo(() => {
     const repo = eligibleRepos.find((candidate) => candidate.id === repoId)
@@ -1130,6 +1135,38 @@ export default function NewWorkspaceComposerCard({
                     placeholder={translate(
                       'auto.components.NewWorkspaceComposerCard.0ee17638fe',
                       'Workspace name'
+                    )}
+                    className="w-full min-w-0 rounded-md border border-input bg-transparent px-3 py-1.5 text-sm shadow-xs transition-[color,box-shadow] outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+                  />
+                </div>
+              ) : null}
+
+              {/* Why: only offer a manual branch name when creating from a
+                  typed name or a base branch. When a tracked work item (PR/
+                  issue/MR/Linear) is the source, the branch is derived from
+                  that item — a linked GitHub PR even re-resolves it at submit —
+                  so an override typed here would be silently ignored. */}
+              {selectedRepoIsGit &&
+              branchesEnabled &&
+              (!smartNameSelection || smartNameSelection.kind === 'branch') ? (
+                <div className="space-y-1">
+                  <label
+                    htmlFor={branchNameInputId}
+                    className="text-xs font-medium text-muted-foreground"
+                  >
+                    {translate(
+                      'auto.components.NewWorkspaceComposerCard.branchName',
+                      'Branch name'
+                    )}
+                  </label>
+                  <input
+                    id={branchNameInputId}
+                    type="text"
+                    value={branchNameOverride ?? ''}
+                    onChange={(event) => onBranchNameOverrideChange(event.target.value)}
+                    placeholder={translate(
+                      'auto.components.NewWorkspaceComposerCard.branchNamePlaceholder',
+                      'feature/my-branch'
                     )}
                     className="w-full min-w-0 rounded-md border border-input bg-transparent px-3 py-1.5 text-sm shadow-xs transition-[color,box-shadow] outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
                   />
