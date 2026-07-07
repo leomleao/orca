@@ -175,7 +175,7 @@ import { TASK_PROVIDERS } from '../../shared/task-providers'
 import { FIRST_PANE_ID } from '../../shared/pane-key'
 import { isTerminalLeafId, makePaneKey, parsePaneKey } from '../../shared/stable-pane-id'
 import { parseAppSshPtyId } from '../../shared/ssh-pty-id'
-import { isValidHostTerminalTabId } from '../../shared/terminal-tab-id'
+import { isValidHostTerminalTabId, isValidTerminalTabId } from '../../shared/terminal-tab-id'
 import { buildAgentDraftLaunchPlan, buildAgentStartupPlan } from '../../shared/tui-agent-startup'
 import { repoIsRemote } from '../../shared/agent-launch-remote'
 import {
@@ -2010,6 +2010,15 @@ export class OrcaRuntimeService {
   private mobileTerminalCreateByMutationId = new Map<
     string,
     Promise<RuntimeMobileSessionCreateTerminalResult>
+  >()
+  // Why: a mobile create waits for the renderer to publish the new tab's surface
+  // via graph-sync, but a throttled/hidden renderer can park that past the surface
+  // timeout and the create would then destroy the live PTY (#7587). This lets the
+  // renderer's own PTY spawn publish the surface main-side, scoped to in-flight
+  // creates so ordinary renderer spawns never publish here.
+  private pendingMobileTerminalCreatesByKey = new Map<
+    string,
+    { activate: boolean; selectIfNoActiveTab: boolean }
   >()
   private mobileSessionTabListeners = new Set<(snapshot: RuntimeMobileSessionTabsResult) => void>()
   private leaves = new Map<string, RuntimeLeafRecord>()
@@ -5213,8 +5222,28 @@ export class OrcaRuntimeService {
     }
   }
 
-  registerPty(ptyId: string, worktreeId: string, connectionId: string | null = null): void {
-    this.recordPtyWorktree(ptyId, worktreeId, { connected: true, connectionId })
+  registerPty(
+    ptyId: string,
+    worktreeId: string,
+    connectionId: string | null = null,
+    binding?: { tabId: string; leafId: string }
+  ): void {
+    // Why: record the renderer pane identity at spawn time so a stalled graph
+    // sync can't hide that a live PTY already backs a pending mobile create.
+    const paneKey =
+      binding && isValidTerminalTabId(binding.tabId) && isTerminalLeafId(binding.leafId)
+        ? makePaneKey(binding.tabId, binding.leafId)
+        : null
+    this.recordPtyWorktree(ptyId, worktreeId, {
+      connected: true,
+      connectionId,
+      ...(binding && paneKey ? { tabId: binding.tabId, paneKey } : {})
+    })
+    // Why: the renderer's own PTY spawn is the reliable signal that the pending
+    // mobile create's tab is live; publish its surface main-side (#7587).
+    if (binding && paneKey) {
+      this.ensurePtyBackedMobileSurfaceForRendererTab(worktreeId, binding.tabId)
+    }
   }
 
   /**
@@ -16130,7 +16159,22 @@ export class OrcaRuntimeService {
     if (opts.activate !== false) {
       this.notifier?.focusTerminal(reply.tabId, worktreeId, null)
     }
+    // Why: register the wait before the renderer's PTY spawn arrives so that
+    // spawn (registerPty) can publish the pty-backed surface main-side even if
+    // graph-sync is stalled (#7587). Removed in the finally below.
+    const pendingCreateKey = `${worktreeId}::${reply.tabId}`
+    // Why: a rescue publishes into the active group (opts.targetGroupId is not
+    // threaded); the renderer's reconciling publication then moves the tab to the
+    // requested group, so any wrong-group placement is cosmetic and stall-window-only.
+    this.pendingMobileTerminalCreatesByKey.set(pendingCreateKey, {
+      activate: opts.activate !== false,
+      selectIfNoActiveTab: true
+    })
     try {
+      // Why: the PTY spawn and the tabCreate reply race on independent IPC
+      // channels; if the spawn already registered, publish immediately so the
+      // wait resolves without depending on a graph sync.
+      this.ensurePtyBackedMobileSurfaceForRendererTab(worktreeId, reply.tabId)
       const surface = await this.waitForMobileTerminalSurface(worktreeId, reply.tabId, {
         timeoutMs: MOBILE_TERMINAL_SURFACE_TIMEOUT_MS
       })
@@ -16167,12 +16211,24 @@ export class OrcaRuntimeService {
         }
       )
     } catch (error) {
-      // Why: the renderer created the tab but its terminal surface never
-      // published (PTY spawn/handle failure). Roll the half-created tab back via
-      // the renderer close path so it can't linger as a ghost in mobile
-      // snapshots, then surface the failure to the caller.
+      // Why: publication latency (throttled/hidden renderer), not spawn failure,
+      // can trip the surface timeout. Rescue only when a live PTY actually backs
+      // the tab — gating on a surface would let a handle-less shell (or a failed
+      // materialize) resolve as success and skip the ghost-tab rollback (#7587).
+      if (this.findLiveRegisteredPtyForRendererTab(worktreeId, reply.tabId)) {
+        const rescued = this.ensurePtyBackedMobileSurfaceForRendererTab(worktreeId, reply.tabId)
+        if (rescued) {
+          return rescued
+        }
+      }
+      // Why: the renderer created the tab but no live PTY backs it (true PTY
+      // spawn/handle failure). Roll the half-created tab back via the renderer
+      // close path so it can't linger as a ghost in mobile snapshots, then
+      // surface the failure to the caller.
       this.notifier?.closeTerminal(reply.tabId)
       throw error
+    } finally {
+      this.pendingMobileTerminalCreatesByKey.delete(pendingCreateKey)
     }
   }
 
@@ -16443,6 +16499,61 @@ export class OrcaRuntimeService {
       return null
     }
     return surface
+  }
+
+  // Why: for an in-flight mobile create whose surface hasn't published yet,
+  // publish it main-side from the live renderer PTY so the create doesn't wait
+  // on a stalled graph sync and destroy the session (#7587). No-op unless a
+  // matching create is pending and a live bound PTY exists; never double-inserts.
+  private ensurePtyBackedMobileSurfaceForRendererTab(
+    worktreeId: string,
+    tabId: string
+  ): RuntimeMobileSessionCreateTerminalResult | null {
+    const pending = this.pendingMobileTerminalCreatesByKey.get(`${worktreeId}::${tabId}`)
+    if (!pending) {
+      return null
+    }
+    const existing = this.findMobileTerminalSurface(worktreeId, tabId)
+    if (existing) {
+      // Why: the renderer's own publication already landed; stay idempotent.
+      return existing
+    }
+    const pty = this.findLiveRegisteredPtyForRendererTab(worktreeId, tabId)
+    const leafId = pty ? parsePaneKey(pty.paneKey ?? '')?.leafId : undefined
+    if (!pty || !leafId) {
+      return null
+    }
+    this.publishPtyBackedMobileSessionTerminal(worktreeId, pty, {
+      tabId,
+      leafId,
+      title: null,
+      activate: pending.activate,
+      selectIfNoActiveTab: pending.selectIfNoActiveTab
+    })
+    // Why: waitForMobileTerminalSurface's check closures are drained only inside
+    // syncWindowGraph; a main-side publish must drain them too or the pending
+    // wait won't observe the insertion (mirrors syncWindowGraph's drain).
+    for (const cb of [...this.graphSyncCallbacks]) {
+      cb()
+    }
+    return this.findMobileTerminalSurface(worktreeId, tabId)
+  }
+
+  private findLiveRegisteredPtyForRendererTab(
+    worktreeId: string,
+    tabId: string
+  ): RuntimePtyWorktreeRecord | null {
+    for (const pty of this.ptysById.values()) {
+      if (
+        pty.worktreeId === worktreeId &&
+        pty.tabId === tabId &&
+        pty.connected &&
+        parsePaneKey(pty.paneKey ?? '')?.leafId
+      ) {
+        return pty
+      }
+    }
+    return null
   }
 
   private isReadyMobileTerminalSurface(

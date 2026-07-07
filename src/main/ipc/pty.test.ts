@@ -1609,6 +1609,47 @@ describe('registerPtyHandlers', () => {
         expect(spawnOptions.env.ORCA_AGENT_HOOK_TOKEN).toBe('agent-token')
       })
 
+      it('threads the validated pane identity into registerPty for a runtime-created daemon PTY (#7587)', async () => {
+        type RuntimeSpawnController = {
+          spawn(args: {
+            cols: number
+            rows: number
+            worktreeId?: string
+            tabId?: string
+            leafId?: string
+            env?: Record<string, string>
+          }): Promise<{ id: string }>
+        }
+        const leafId = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'
+        setupDaemonAdapter()
+        const runtime = {
+          setPtyController: vi.fn(),
+          registerPty: vi.fn(),
+          onPtySpawned: vi.fn(),
+          onPtyExit: vi.fn(),
+          onPtyData: vi.fn()
+        }
+        handlers.clear()
+        registerPtyHandlers(mainWindow as never, runtime as never)
+        const controller = runtime.setPtyController.mock.calls[0]?.[0] as RuntimeSpawnController
+
+        await controller.spawn({
+          cols: 80,
+          rows: 24,
+          worktreeId: 'wt-runtime',
+          tabId: 'tab-1',
+          leafId
+        })
+
+        // Why: runtime-created spawns (e.g. the mobile-create materialize path)
+        // must thread the same {tabId, leafId} so the catch-path rescue can find
+        // and keep their live PTY (#7587).
+        expect(runtime.registerPty).toHaveBeenCalledWith(expect.any(String), 'wt-runtime', null, {
+          tabId: 'tab-1',
+          leafId
+        })
+      })
+
       it('uses the owning project WSL runtime for runtime-created daemon PTYs', async () => {
         await withWin32Platform(async () => {
           _setWslCachesForTests({ available: true, distros: ['Ubuntu'] })
@@ -4244,6 +4285,67 @@ describe('registerPtyHandlers', () => {
       expect.any(String),
       'term_agent_teams'
     )
+  })
+
+  it('threads the validated pane identity into registerPty for a renderer PTY spawn (#7587)', async () => {
+    const leafId = '88888888-8888-4888-8888-888888888888'
+    const runtime = {
+      setPtyController: vi.fn(),
+      preAllocateHandleForPty: vi.fn(() => 'term_seam'),
+      registerPreAllocatedHandleForPty: vi.fn(),
+      registerPty: vi.fn(),
+      getDriver: vi.fn(() => ({ kind: 'host' })),
+      onPtySpawned: vi.fn(),
+      onPtyExit: vi.fn(),
+      onPtyData: vi.fn()
+    }
+    handlers.clear()
+    registerPtyHandlers(mainWindow as never, runtime as never)
+
+    await handlers.get('pty:spawn')!(mainWindowIpcEvent, {
+      cols: 80,
+      rows: 24,
+      cwd: '/repo',
+      tabId: 'tab-1',
+      leafId,
+      worktreeId: 'wt-1'
+    })
+
+    // Why: this is the load-bearing wiring for #7587 — the runtime can only back a
+    // stalled mobile create from a live spawn if the spawn threads {tabId, leafId}.
+    expect(runtime.registerPty).toHaveBeenCalledWith(expect.any(String), 'wt-1', null, {
+      tabId: 'tab-1',
+      leafId
+    })
+  })
+
+  it('omits the pane identity from registerPty when the leafId is not a terminal leaf (#7587)', async () => {
+    const runtime = {
+      setPtyController: vi.fn(),
+      preAllocateHandleForPty: vi.fn(() => 'term_seam'),
+      registerPreAllocatedHandleForPty: vi.fn(),
+      registerPty: vi.fn(),
+      getDriver: vi.fn(() => ({ kind: 'host' })),
+      onPtySpawned: vi.fn(),
+      onPtyExit: vi.fn(),
+      onPtyData: vi.fn()
+    }
+    handlers.clear()
+    registerPtyHandlers(mainWindow as never, runtime as never)
+
+    await handlers.get('pty:spawn')!(mainWindowIpcEvent, {
+      cols: 80,
+      rows: 24,
+      cwd: '/repo',
+      tabId: 'tab-1',
+      leafId: 'pane:1',
+      worktreeId: 'wt-1'
+    })
+
+    // Why: legacy numeric pane ids (`pane:N`) are not terminal leaf ids, so the
+    // spawn seam must not fabricate a binding for them (registerPty would ignore
+    // it anyway); this pins that the seam passes a clean `undefined`.
+    expect(runtime.registerPty).toHaveBeenCalledWith(expect.any(String), 'wt-1', null, undefined)
   })
 
   it('refreshes native Agent Teams env when captured teammate mode lives in launch args', async () => {
