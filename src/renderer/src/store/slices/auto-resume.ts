@@ -3,7 +3,14 @@ import type {
   AgentAutoResumeEntry,
   AgentAutoResumeSnapshot
 } from '../../../../shared/agent-auto-resume-types'
+import { translate } from '@/i18n/i18n'
 import type { AppState } from '../types'
+
+// Keys as constants (not inline literals) so the localization catalog verifier
+// — which only statically checks literal keys — treats the English fallbacks as
+// authoritative, matching the settings-copy pattern.
+const RATE_LIMITED_WAITING_KEY = 'auto.lib.auto-resume.rate-limited-waiting'
+const RATE_LIMITED_RESUMES_KEY = 'auto.lib.auto-resume.rate-limited-resumes'
 
 // Why: the main-process AgentAutoResumeService pushes its full tracked-entry
 // list on every state change; the renderer just mirrors it and derives the
@@ -63,12 +70,12 @@ export function selectHasRateLimitedForWorktree(
  *  time is unknown (e.g. an unparsed banner or the wait-for-reset menu). */
 export function formatRateLimitedLabel(resumesAt: number | null): string {
   if (typeof resumesAt !== 'number' || !Number.isFinite(resumesAt)) {
-    return 'Rate-limited · waiting for reset'
+    return translate(RATE_LIMITED_WAITING_KEY, 'Rate-limited · waiting for reset')
   }
   try {
     const time = new Date(resumesAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
-    return `Rate-limited · resumes ${time}`
+    return translate(RATE_LIMITED_RESUMES_KEY, 'Rate-limited · resumes {{time}}', { time })
   } catch {
-    return 'Rate-limited · waiting for reset'
+    return translate(RATE_LIMITED_WAITING_KEY, 'Rate-limited · waiting for reset')
   }
 }

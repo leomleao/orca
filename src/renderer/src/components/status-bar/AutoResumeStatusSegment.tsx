@@ -2,16 +2,27 @@ import React from 'react'
 import { Hourglass } from 'lucide-react'
 import { useShallow } from 'zustand/react/shallow'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
+import { translate } from '@/i18n/i18n'
 import { useAppStore } from '../../store'
+
+// i18n keys held as constants (not inline literals) to match the settings-copy
+// pattern and the catalog verifier, which only statically checks literal keys.
+const WAITING_KEY = 'auto.components.status-bar.auto-resume.waiting'
+const RESUMES_KEY = 'auto.components.status-bar.auto-resume.resumes'
+const AGENT_KEY = 'auto.components.status-bar.auto-resume.agent'
+const AGENTS_KEY = 'auto.components.status-bar.auto-resume.agents'
+const LABEL_KEY = 'auto.components.status-bar.auto-resume.label'
+const TOOLTIP_KEY = 'auto.components.status-bar.auto-resume.tooltip'
 
 function formatResumeClock(resumesAt: number | null): string {
   if (typeof resumesAt !== 'number' || !Number.isFinite(resumesAt)) {
-    return 'waiting for reset'
+    return translate(WAITING_KEY, 'waiting for reset')
   }
   try {
-    return `resumes ${new Date(resumesAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}`
+    const time = new Date(resumesAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
+    return translate(RESUMES_KEY, 'resumes {{time}}', { time })
   } catch {
-    return 'waiting for reset'
+    return translate(WAITING_KEY, 'waiting for reset')
   }
 }
 
@@ -53,9 +64,13 @@ export function AutoResumeStatusSegment({
     return null
   }
 
-  const plural = summary.count === 1 ? 'agent' : 'agents'
-  const label = `${summary.count} paused`
-  const tooltip = `${summary.count} ${plural} paused · ${formatResumeClock(summary.soonestAt)}`
+  const noun = summary.count === 1 ? translate(AGENT_KEY, 'agent') : translate(AGENTS_KEY, 'agents')
+  const label = translate(LABEL_KEY, '{{n}} paused', { n: summary.count })
+  const tooltip = translate(TOOLTIP_KEY, '{{n}} {{noun}} paused · {{detail}}', {
+    n: summary.count,
+    noun,
+    detail: formatResumeClock(summary.soonestAt)
+  })
 
   return (
     <Tooltip>
