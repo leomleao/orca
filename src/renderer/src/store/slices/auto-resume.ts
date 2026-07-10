@@ -37,7 +37,7 @@ export function selectWorktreeRateLimitStatus(
 ): WorktreeRateLimitStatus {
   let hasRateLimited = false
   let resumesAt: number | null = null
-  for (const entry of state.autoResumeEntries) {
+  for (const entry of state.autoResumeEntries ?? []) {
     if (entry.worktreeId !== worktreeId) {
       continue
     }
@@ -56,7 +56,7 @@ export function selectHasRateLimitedForWorktree(
   state: Pick<AutoResumeSlice, 'autoResumeEntries'>,
   worktreeId: string
 ): boolean {
-  return state.autoResumeEntries.some((entry) => entry.worktreeId === worktreeId)
+  return (state.autoResumeEntries ?? []).some((entry) => entry.worktreeId === worktreeId)
 }
 
 /** "Rate-limited · resumes 3:50 PM", or "· waiting for reset" when the reset
