@@ -65,16 +65,39 @@ export function detectUsageLimitStall(normalizedTail: string): UsageLimitStallSi
 const BANNER_LABEL_RE =
   /(?:session|usage|weekly|rate|5-?\s*hour|5h)\s*limit|hit\s*your|limit\s*reset/i
 
+// Why: Codex phrases its reset as "…or try again at Apr 23rd, 2026 10:42 AM.",
+// which the Claude "resets …" parser doesn't recognize. Match the date after
+// the retry marker; [\s\S]*? lets the copy between the prefix and marker wrap.
+const CODEX_RETRY_AT_RE =
+  /or\s+try\s+again\s+at\s+([A-Z][a-z]{2,8}\s+\d{1,2}(?:st|nd|rd|th)?,?\s+\d{4}\s+\d{1,2}:\d{2}\s*(?:AM|PM))\.?/i
+const DAY_ORDINAL_RE = /(\d{1,2})(?:st|nd|rd|th)/i
+
+function parseCodexRetryAt(text: string): number | null {
+  const match = CODEX_RETRY_AT_RE.exec(text)
+  if (!match) {
+    return null
+  }
+  // "Apr 23rd, 2026 10:42 AM" -> "Apr 23, 2026 10:42 AM" so Date can parse it.
+  // The text carries no timezone, so this resolves in the runtime host's local
+  // zone; the service prefers the provider's structured resets_at when present.
+  const normalized = match[1].replace(DAY_ORDINAL_RE, '$1')
+  const timestamp = new Date(normalized).getTime()
+  return Number.isFinite(timestamp) ? timestamp : null
+}
+
 /**
- * Parse the reset timestamp out of a usage-limit banner's tail. Reuses the
- * Claude PTY reset parser (handles "resets 3:50pm", "resets Jan 5 at 4pm",
- * relative "3h 20m", time zones). Returns null when the banner carries no
- * parseable reset (e.g. the menu, which never prints a time).
+ * Parse the reset timestamp out of a usage-limit banner's tail. Handles Codex's
+ * "or try again at <date>" and Claude's "resets 3:50pm" / "resets Jan 5 at 4pm"
+ * / relative "3h 20m" (with time zones). Returns null when the banner carries
+ * no parseable reset (e.g. the menu, which never prints a time).
  */
 export function extractUsageLimitResetAt(tailLines: string[]): number | null {
-  return extractClaudePtyResetMetadata(
-    tailLines,
-    (line) => BANNER_LABEL_RE.test(line),
-    () => false
-  ).resetsAt
+  return (
+    parseCodexRetryAt(tailLines.join('\n')) ??
+    extractClaudePtyResetMetadata(
+      tailLines,
+      (line) => BANNER_LABEL_RE.test(line),
+      () => false
+    ).resetsAt
+  )
 }

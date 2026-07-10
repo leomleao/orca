@@ -24,6 +24,13 @@ describe('detectUsageLimitStall', () => {
     )
   })
 
+  it('detects the Codex usage-limit error banner', () => {
+    const codex =
+      "You've hit your usage limit. Upgrade to Plus to continue using Codex " +
+      '(https://chatgpt.com/explore/plus), or try again at Apr 23rd, 2026 10:42 AM.'
+    expect(detectUsageLimitStall(lc(codex))?.reason).toBe('usage-limit-banner')
+  })
+
   it('detects the wait-for-reset menu', () => {
     const menu = [
       'What do you want to do?',
@@ -81,5 +88,18 @@ describe('extractUsageLimitResetAt', () => {
 
   it('returns null when the tail carries no reset (e.g. the menu)', () => {
     expect(extractUsageLimitResetAt(['❯ 1. Stop and wait for limit to reset'])).toBeNull()
+  })
+
+  it('parses Codex "or try again at <date>" including the ordinal suffix', () => {
+    const resetsAt = extractUsageLimitResetAt([
+      "You've hit your usage limit. Upgrade to Plus to continue using Codex " +
+        '(https://chatgpt.com/explore/plus), or try again at Apr 23rd, 2026 10:42 AM.'
+    ])
+    expect(resetsAt).toBe(new Date('Apr 23, 2026 10:42 AM').getTime())
+  })
+
+  it('parses a Codex reset with a PM time', () => {
+    const resetsAt = extractUsageLimitResetAt(['or try again at May 14th, 2026 2:32 PM.'])
+    expect(resetsAt).toBe(new Date('May 14, 2026 2:32 PM').getTime())
   })
 })
