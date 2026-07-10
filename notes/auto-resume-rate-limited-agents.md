@@ -5,7 +5,7 @@
 Agent CLIs (Claude Code, Codex) stall when they hit provider usage limits. Claude Code shows either
 an idle banner — `You've hit your session limit · resets 3:50pm (Europe/London)` — or a blocking menu:
 
-```
+```text
 What do you want to do?
 ❯ 1. Stop and wait for limit to reset
   2. Ask your admin for more usage

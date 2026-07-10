@@ -35,6 +35,7 @@ import { registerComputerUsePermissionHandlers } from './computer-use-permission
 import { setTrustedBrowserRendererWebContentsId, setAgentBrowserBridgeRef } from './browser'
 import { registerSessionHandlers } from './session'
 import { registerSettingsHandlers } from './settings'
+import { registerAgentAutoResumeHandlers } from './agent-auto-resume'
 import { registerDiagnosticsHandlers } from './diagnostics'
 import { registerSkillsHandlers } from './skills'
 import { registerWorkspaceSpaceHandlers } from './workspace-space'
@@ -153,6 +154,7 @@ export function registerCoreHandlers(
   registerDiagnosticsHandlers()
   registerComputerUsePermissionHandlers()
   registerSettingsHandlers(store, agentAwakeService, agentAutoResumeService)
+  registerAgentAutoResumeHandlers(agentAutoResumeService)
   registerSkillsHandlers(store)
   if (automations) {
     registerAutomationHandlers(store, automations)

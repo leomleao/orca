@@ -2889,6 +2889,7 @@ export type PreloadApi = {
     onUpdate: (callback: (state: RateLimitState) => void) => () => void
   }
   agentAutoResume: {
+    get: () => Promise<AgentAutoResumeSnapshot>
     onUpdate: (callback: (snapshot: AgentAutoResumeSnapshot) => void) => () => void
   }
   minimaxCredentials: {

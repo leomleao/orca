@@ -3867,6 +3867,7 @@ const api = {
   },
 
   agentAutoResume: {
+    get: (): Promise<AgentAutoResumeSnapshot> => ipcRenderer.invoke('agentAutoResume:get'),
     onUpdate: (callback: (snapshot: AgentAutoResumeSnapshot) => void): (() => void) => {
       const listener = (_event: Electron.IpcRendererEvent, snapshot: AgentAutoResumeSnapshot) =>
         callback(snapshot)
