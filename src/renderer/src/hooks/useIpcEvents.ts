@@ -2552,6 +2552,12 @@ export function useIpcEvents(): void {
         useAppStore.getState().setRateLimitsFromPush(state as RateLimitState)
       })
     )
+    const unsubscribeAutoResume = window.api.agentAutoResume?.onUpdate?.((snapshot) => {
+      useAppStore.getState().setAutoResumeSnapshot(snapshot)
+    })
+    if (unsubscribeAutoResume) {
+      unsubs.push(unsubscribeAutoResume)
+    }
     // Why: the startup get is a fallback; a live push may already include
     // system-default account snapshots that an older get result lacks.
     window.api.rateLimits.get().then((state) => {
