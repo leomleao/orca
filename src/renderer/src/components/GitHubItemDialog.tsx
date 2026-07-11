@@ -6338,68 +6338,20 @@ function GHEditSection({
         </section>
 
         <section className="min-w-0">
+          {/* Why: primary open/start CTA lives only in the issue header — property
+              columns are metadata (status, assignees, labels, attached workspace). */}
           <div className="mb-2 text-[11px] font-semibold uppercase tracking-[0.05em] text-muted-foreground">
             {translate('auto.components.GitHubItemDialog.2e4d806c92', 'Workspace')}
           </div>
           {attachedWorkspaceLabel ? (
-            <div className="mb-2 flex min-w-0 items-center gap-1.5 text-[12px] text-muted-foreground">
+            <div className="flex min-w-0 items-center gap-1.5 text-[12px] text-muted-foreground">
               <FolderKanban className="size-3.5 shrink-0" />
               <span className="truncate">{attachedWorkspaceLabel}</span>
             </div>
-          ) : null}
-          {hasAttachedWorkspace ? (
-            <DropdownMenu modal={false}>
-              <ButtonGroup className="max-w-full">
-                <Button
-                  type="button"
-                  size="sm"
-                  onClick={handleOpenOrUseWorkspace}
-                  className="min-w-0 flex-1 gap-1.5"
-                  aria-label={translate(
-                    'auto.components.GitHubItemDialog.84855fedd0',
-                    'Open workspace attached to issue'
-                  )}
-                >
-                  {translate('auto.components.GitHubItemDialog.726db41722', 'Open workspace')}
-                  <ArrowRight className="size-3.5" />
-                </Button>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    type="button"
-                    size="icon-sm"
-                    aria-label={translate(
-                      'auto.components.GitHubItemDialog.fe6ff12dc2',
-                      'More issue workspace actions'
-                    )}
-                  >
-                    <ChevronDown className="size-3.5" />
-                  </Button>
-                </DropdownMenuTrigger>
-              </ButtonGroup>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onSelect={() => onUse(item)}>
-                  <Plus className="size-4" />
-                  {translate('auto.components.GitHubItemDialog.36182aa57f', 'Start new workspace')}
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
           ) : (
-            <Button
-              type="button"
-              size="sm"
-              onClick={() => onUse(item)}
-              className="max-w-full gap-1.5"
-              aria-label={translate(
-                'auto.components.GitHubItemDialog.0ab4664a8b',
-                'Start workspace from issue'
-              )}
-            >
-              {translate(
-                'auto.components.GitHubItemDialog.0ab4664a8b',
-                'Start workspace from issue'
-              )}
-              <ArrowRight className="size-3.5" />
-            </Button>
+            <div className="text-[12px] text-muted-foreground">
+              {translate('auto.components.GitHubItemDialog.886a64b081', 'None yet')}
+            </div>
           )}
         </section>
       </aside>
