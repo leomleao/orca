@@ -37,6 +37,7 @@ import {
 } from '../../runtime/runtime-rpc-client'
 import { toRuntimeWorktreeSelector } from '../../runtime/runtime-worktree-selector'
 import { getHostedReviewCacheKey, refreshHostedReviewCard } from './hosted-review'
+import { isPositiveHostedReviewNumber } from '../../../../shared/hosted-review'
 import { getGitHubPRCacheKey, getLegacyGitHubPRCacheKey } from './github-cache-key'
 import { moveFocusToRendererBeforeFocusedWebviewHidden } from './browser-webview-cleanup'
 import { toast } from 'sonner'
@@ -1382,10 +1383,6 @@ function getHostedReviewPushTargetLookup(worktree: Worktree): {
     }
   }
   return null
-}
-
-function isPositiveHostedReviewNumber(value: unknown): value is number {
-  return typeof value === 'number' && Number.isInteger(value) && value > 0
 }
 
 type HostedReviewLinkKey =
