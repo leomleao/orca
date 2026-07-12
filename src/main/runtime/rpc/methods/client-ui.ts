@@ -11,6 +11,7 @@ import {
 import { isTuiAgent } from '../../../../shared/tui-agent-config'
 import { isTaskProvider } from '../../../../shared/task-providers'
 import { normalizeDisabledTuiAgents } from '../../../../shared/tui-agent-selection'
+import { normalizePRBotAuthorOverrides } from '../../../../shared/pr-bot-author-overrides'
 import { normalizeWorktreeCardProperties } from '../../../../shared/worktree-card-properties'
 import type { PersistedUIState, TaskProvider } from '../../../../shared/types'
 import { defineMethod, type RpcMethod } from '../core'
@@ -104,6 +105,7 @@ const FeatureInteractions = z
 const FeatureInteractionIdParam = z.custom<FeatureInteractionId>(isFeatureInteractionId, {
   message: 'Unknown feature interaction id'
 })
+const PRBotAuthorOverrideUpdate = z.object({ author: z.string(), isBot: z.boolean() }).strict()
 const GitHubProjectRef = z
   .object({
     owner: z.string(),
@@ -156,7 +158,11 @@ const SettingsUpdate = z
     compactWorktreeCards: z.boolean().optional(),
     minimaxGroupId: z.string().optional(),
     minimaxUsageModels: z.string().optional(),
-    githubProjects: GitHubProjectSettings.optional()
+    githubProjects: GitHubProjectSettings.optional(),
+    prBotAuthorOverrides: z
+      .unknown()
+      .transform((value) => normalizePRBotAuthorOverrides(value))
+      .optional()
   })
   .strict()
   .default({})
@@ -269,6 +275,11 @@ export const CLIENT_UI_METHODS: RpcMethod[] = [
     name: 'settings.update',
     params: SettingsUpdate,
     handler: (params, { runtime }) => ({ settings: runtime.updateClientSettings(params) })
+  }),
+  defineMethod({
+    name: 'settings.updatePRBotAuthorOverride',
+    params: PRBotAuthorOverrideUpdate,
+    handler: (params, { runtime }) => ({ settings: runtime.updateClientPRBotAuthorOverride(params) })
   }),
   defineMethod({
     name: 'ui.get',

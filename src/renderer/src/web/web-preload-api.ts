@@ -55,6 +55,10 @@ import { EMPTY_PTY_MAIN_DELIVERY_DIAGNOSTICS } from '../../../shared/pty-deliver
 import { createE2EConfig } from '../../../shared/e2e-config'
 import { relativePathInsideRoot } from '../../../shared/cross-platform-path'
 import {
+  applyPRBotAuthorOverride,
+  normalizePRBotAuthorOverrides
+} from '../../../shared/pr-bot-author-overrides'
+import {
   LOCAL_EXECUTION_HOST_ID,
   normalizeExecutionHostScope,
   normalizeExecutionHostId,
@@ -590,6 +594,7 @@ function createWebPreloadApi(): Partial<PreloadApi> {
         writeJson(SETTINGS_STORAGE_KEY, next)
         return syncRuntimeBackedSettings(sanitizedUpdates, next)
       },
+      updatePRBotAuthorOverride: (args) => updateRuntimePRBotAuthorOverride(args),
       listFonts: () => Promise.resolve([]),
       onChanged: () => noopUnsubscribe
     } satisfies Partial<WebSettingsApi> as unknown as WebSettingsApi,
@@ -3102,6 +3107,11 @@ async function getRuntimeBackedStoredSettings(): Promise<GlobalSettings> {
     if (typeof result.settings.minimaxUsageModels === 'string') {
       runtimeSettings.minimaxUsageModels = result.settings.minimaxUsageModels
     }
+    if (Array.isArray(result.settings.prBotAuthorOverrides)) {
+      runtimeSettings.prBotAuthorOverrides = normalizePRBotAuthorOverrides(
+        result.settings.prBotAuthorOverrides
+      )
+    }
     const next = mergeSettings(local, runtimeSettings)
     writeJson(SETTINGS_STORAGE_KEY, next)
     return next
@@ -3131,6 +3141,11 @@ async function syncRuntimeBackedSettings(
   if (typeof updates.minimaxUsageModels === 'string') {
     runtimeUpdates.minimaxUsageModels = updates.minimaxUsageModels
   }
+  if (Array.isArray(updates.prBotAuthorOverrides)) {
+    runtimeUpdates.prBotAuthorOverrides = normalizePRBotAuthorOverrides(
+      updates.prBotAuthorOverrides
+    )
+  }
   if (Object.keys(runtimeUpdates).length === 0) {
     return localNext
   }
@@ -3147,6 +3162,36 @@ async function syncRuntimeBackedSettings(
     // Why: unpaired/offline web clients still need local settings persistence.
     return localNext
   }
+}
+
+async function updateRuntimePRBotAuthorOverride(args: {
+  author: string
+  isBot: boolean
+}): Promise<GlobalSettings> {
+  const local = getStoredSettings()
+  if (requireActiveEnvironmentOrNull()) {
+    // Why: a paired client must not report a successful mark that the
+    // authoritative runtime failed to persist and will later overwrite.
+    const result = await callRuntimeResult<{ settings: Partial<GlobalSettings> }>(
+      'settings.updatePRBotAuthorOverride',
+      args,
+      15_000
+    )
+    const next = mergeSettings(local, {
+      prBotAuthorOverrides: normalizePRBotAuthorOverrides(result.settings.prBotAuthorOverrides)
+    })
+    writeJson(SETTINGS_STORAGE_KEY, next)
+    return next
+  }
+  const next = mergeSettings(local, {
+    prBotAuthorOverrides: applyPRBotAuthorOverride(
+      local.prBotAuthorOverrides,
+      args.author,
+      args.isBot
+    )
+  })
+  writeJson(SETTINGS_STORAGE_KEY, next)
+  return next
 }
 
 function getStoredOnboarding(): OnboardingState {

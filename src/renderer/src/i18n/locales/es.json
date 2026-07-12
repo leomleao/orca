@@ -458,6 +458,13 @@
               "all": "Aún no hay comentarios."
             }
           }
+        },
+        "bot": {
+          "author": {
+            "overrides": {
+              "6d5d52b53f": "Se alcanzó el límite de autores de bots personalizados"
+            }
+          }
         }
       },
       "resume": {
@@ -9655,7 +9662,9 @@
                 "b13f85d75c": "Cronología",
                 "f5cf324efa": "Opciones de visualización de comentarios",
                 "5e6e5a13fa": "Vista",
-                "actionRequiredHint": "Este check requiere una acción manual en GitHub (por ejemplo, aprobar la ejecución del workflow) antes de que el merge quede desbloqueado."
+                "actionRequiredHint": "Este check requiere una acción manual en GitHub (por ejemplo, aprobar la ejecución del workflow) antes de que el merge quede desbloqueado.",
+                "b3195cba33": "Desmarcar autor como bot",
+                "f588b46a6c": "Marcar autor como bot"
               },
               "empty": {
                 "state": {

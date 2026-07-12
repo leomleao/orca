@@ -458,6 +458,13 @@
               "all": "コメントはまだありません。"
             }
           }
+        },
+        "bot": {
+          "author": {
+            "overrides": {
+              "6d5d52b53f": "ボット作成者の上書き数が上限に達しました"
+            }
+          }
         }
       },
       "resume": {
@@ -9655,7 +9662,9 @@
                 "b13f85d75c": "タイムライン",
                 "f5cf324efa": "Comment display options",
                 "5e6e5a13fa": "表示",
-                "actionRequiredHint": "This check needs a manual action on GitHub (for example, approving the workflow run) before merging is unblocked."
+                "actionRequiredHint": "This check needs a manual action on GitHub (for example, approving the workflow run) before merging is unblocked.",
+                "b3195cba33": "作成者のボット指定を解除",
+                "f588b46a6c": "作成者をボットとして指定"
               },
               "empty": {
                 "state": {

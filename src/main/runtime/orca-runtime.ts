@@ -740,6 +740,7 @@ import type { ClaudeAccountService } from '../claude-accounts/service'
 import type { CodexAccountService } from '../codex-accounts/service'
 import type { RateLimitService } from '../rate-limits/service'
 import type { ClaudeRateLimitAccountsState, CodexRateLimitAccountsState } from '../../shared/types'
+import { applyPRBotAuthorOverride } from '../../shared/pr-bot-author-overrides'
 import type { RateLimitState } from '../../shared/rate-limit-types'
 import type { VoiceSettings } from '../../shared/speech-types'
 import { getSpeechModelManager, getSpeechSttService } from '../speech/speech-runtime-service'
@@ -853,6 +854,7 @@ type RuntimeStore = {
     compactWorktreeCards?: GlobalSettings['compactWorktreeCards']
     minimaxGroupId?: GlobalSettings['minimaxGroupId']
     minimaxUsageModels?: GlobalSettings['minimaxUsageModels']
+    prBotAuthorOverrides?: GlobalSettings['prBotAuthorOverrides']
     gitlabProjects?: GlobalSettings['gitlabProjects']
     mobileAutoRestoreFitMs?: number | null
     mobileEmulatorEnabled?: boolean
@@ -2630,6 +2632,7 @@ export class OrcaRuntimeService {
     | 'compactWorktreeCards'
     | 'minimaxGroupId'
     | 'minimaxUsageModels'
+    | 'prBotAuthorOverrides'
   > {
     if (!this.store?.getSettings) {
       throw new Error('runtime_unavailable')
@@ -2651,7 +2654,8 @@ export class OrcaRuntimeService {
       experimentalNewWorktreeCardStyle: settings.experimentalNewWorktreeCardStyle === true,
       compactWorktreeCards: settings.compactWorktreeCards === true,
       minimaxGroupId: settings.minimaxGroupId ?? '',
-      minimaxUsageModels: settings.minimaxUsageModels ?? 'general'
+      minimaxUsageModels: settings.minimaxUsageModels ?? 'general',
+      prBotAuthorOverrides: settings.prBotAuthorOverrides ?? []
     }
   }
 
@@ -2673,6 +2677,7 @@ export class OrcaRuntimeService {
       | 'compactWorktreeCards'
       | 'minimaxGroupId'
       | 'minimaxUsageModels'
+      | 'prBotAuthorOverrides'
     >
   ): Pick<
     GlobalSettings,
@@ -2692,6 +2697,7 @@ export class OrcaRuntimeService {
     | 'compactWorktreeCards'
     | 'minimaxGroupId'
     | 'minimaxUsageModels'
+    | 'prBotAuthorOverrides'
   > {
     if (!this.store?.getSettings || !this.store.updateSettings) {
       throw new Error('runtime_unavailable')
@@ -2704,6 +2710,18 @@ export class OrcaRuntimeService {
     ) {
       applyAgentStatusHooksEnabled(updates.agentStatusHooksEnabled)
     }
+    return this.getClientSettings()
+  }
+
+  updateClientPRBotAuthorOverride(args: { author: string; isBot: boolean }) {
+    if (!this.store?.getSettings || !this.store.updateSettings) {
+      throw new Error('runtime_unavailable')
+    }
+    const current = this.store.getSettings().prBotAuthorOverrides
+    this.store.updateSettings(
+      { prBotAuthorOverrides: applyPRBotAuthorOverride(current, args.author, args.isBot) },
+      { notifyListeners: true }
+    )
     return this.getClientSettings()
   }
 
