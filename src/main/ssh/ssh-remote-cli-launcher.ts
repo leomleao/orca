@@ -232,6 +232,7 @@ export function createRemoteCliInstallPlan(env: RemoteCliInstallEnv): RemoteCliI
         ].join('\n')
       }
     ],
-    postWriteCommands: [`chmod +x ${quoteSh(launcherPath)} 2>/dev/null; true`]
+    // Surface chmod failures: a non-executable launcher must fail install loudly, not silently.
+    postWriteCommands: [`chmod +x ${quoteSh(launcherPath)}`]
   }
 }
