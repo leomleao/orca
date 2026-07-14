@@ -25,15 +25,22 @@ export type AntigravityServerPorts = {
   https: number | null
 }
 
+export type AntigravityLocalRateLimitOptions = {
+  homePath?: string
+  appDataPath?: string
+}
+
 function validPort(value: string | undefined): number | null {
   const port = Number(value)
   return Number.isInteger(port) && port > 0 && port <= 65_535 ? port : null
 }
 
+/** Resolves AGY's per-user CLI log directory without platform-specific separators. */
 export function getAntigravityCliLogDirectory(homePath: string): string {
   return join(homePath, '.gemini', 'antigravity-cli', 'log')
 }
 
+/** Uses the newest listener announcement when a CLI log contains server restarts. */
 export function parseAntigravityCliServerPorts(log: string): AntigravityServerPorts {
   const httpsMatches = [
     ...log.matchAll(/language server listening on (?:random port at )?(\d+) for HTTPS/gi)
@@ -47,6 +54,7 @@ export function parseAntigravityCliServerPorts(log: string): AntigravityServerPo
   }
 }
 
+/** Resolves the Antigravity desktop language-server log on supported platforms. */
 export function getAntigravityLanguageServerLogPath(
   platform: NodeJS.Platform,
   homePath: string,
@@ -57,10 +65,12 @@ export function getAntigravityLanguageServerLogPath(
     : join(appDataPath, 'Antigravity', 'logs', LANGUAGE_SERVER_LOG_NAME)
 }
 
+/** Returns the newest desktop HTTPS listener recorded in a language-server log. */
 export function parseAntigravityLanguageServerPort(log: string): number | null {
   return parseAntigravityCliServerPorts(log).https
 }
 
+/** Accepts CSRF configuration only from a page identifying itself as Antigravity. */
 export function parseAntigravityAppConfig(html: string): AntigravityAppConfig | null {
   const configJson = html.match(/window\.__APP_CONFIG__\s*=\s*(\{.*?\});<\/script>/s)?.[1]
   if (!configJson) {
@@ -216,8 +226,11 @@ async function fetchFromDesktopApp(
   return parseQuotaResponse(response)
 }
 
-export async function fetchAntigravityLocalRateLimits(): Promise<ProviderRateLimits | null> {
-  const homePath = homedir()
+/** Prefers a live AGY CLI, then degrades through desktop and credential sources. */
+export async function fetchAntigravityLocalRateLimits(
+  options?: AntigravityLocalRateLimitOptions
+): Promise<ProviderRateLimits | null> {
+  const homePath = options?.homePath ?? homedir()
   try {
     const cliRateLimits = await fetchFromCliLogs(homePath)
     if (cliRateLimits) {
@@ -228,7 +241,7 @@ export async function fetchAntigravityLocalRateLimits(): Promise<ProviderRateLim
   }
 
   try {
-    return await fetchFromDesktopApp(homePath, app.getPath('appData'))
+    return await fetchFromDesktopApp(homePath, options?.appDataPath ?? app.getPath('appData'))
   } catch {
     // Native keyring and Gemini OAuth sources remain the final fallback.
     return null

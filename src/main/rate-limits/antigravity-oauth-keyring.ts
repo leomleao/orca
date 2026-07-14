@@ -64,6 +64,7 @@ if ([OrcaCredentialReader]::CredRead('gemini:antigravity', 1, 0, [ref]$pointer))
 }
 `.trim()
 
+/** Keeps native credential-store access behind fixed, platform-specific commands. */
 export function getAntigravityKeyringCommand(platform: NodeJS.Platform): KeyringCommand | null {
   switch (platform) {
     case 'darwin':
@@ -96,6 +97,7 @@ export function getAntigravityKeyringCommand(platform: NodeJS.Platform): Keyring
   }
 }
 
+/** Rejects incomplete or malformed keyring values before they reach Google APIs. */
 export function parseAntigravityKeyringCredentials(rawValue: string): GeminiCredentials | null {
   const trimmed = rawValue.trim()
   if (!trimmed.startsWith(KEYRING_VALUE_PREFIX)) {
@@ -137,6 +139,7 @@ export function parseAntigravityKeyringCredentials(rawValue: string): GeminiCred
   }
 }
 
+/** Reads Antigravity credentials without making keyring availability a hard dependency. */
 export async function readAntigravityCredentials(): Promise<GeminiCredentials | null> {
   const command = getAntigravityKeyringCommand(process.platform)
   if (!command) {

@@ -55,7 +55,8 @@ describe('AccountsPane', () => {
     const markup = renderPane(getDefaultSettings('/tmp'))
 
     expect(markup).toContain('Showing accounts for this device. New accounts are added there.')
-    expect(markup).toContain('authenticate with Google for this device. This uses credentials')
+    expect(markup).toContain('Reads quota from a running Antigravity CLI or app for this device')
+    expect(markup).toContain('Credentials stay on this device')
     expect(markup).not.toContain('ShowingThis device')
     expect(markup).not.toContain('forThis device')
   })

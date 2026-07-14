@@ -118,6 +118,7 @@ function mostConstrainedWindow(groups: RateLimitGroup[], id: string): RateLimitW
   }, null)
 }
 
+/** Converts AGY's grouped remaining quotas into Orca's consumption-based model. */
 export function parseAntigravityQuotaSummary(
   value: unknown,
   updatedAt = Date.now()

@@ -1381,11 +1381,11 @@ export function AccountsPane({
         <SearchableSetting
           title={translate(
             'auto.components.settings.AccountsPane.0c7f915b01',
-            'Use Antigravity or Gemini CLI credentials'
+            'Use Antigravity or Gemini CLI for usage'
           )}
           description={translate(
             'auto.components.settings.AccountsPane.d676c41fc6',
-            "Reads OAuth credentials from Antigravity's native OS keyring or your local Gemini CLI installation to authenticate with Google. These credentials were issued to Google's apps, not Orca. May break if Google changes their storage. Use at your own risk."
+            'Reads quota from a running Antigravity CLI or app, with native keyring and local Gemini CLI credentials as fallbacks. Credentials stay on this device and are sent only to Google APIs. May break if Google changes these interfaces. Use at your own risk.'
           )}
           keywords={[
             'antigravity',
@@ -1403,13 +1403,13 @@ export function AccountsPane({
             <Label>
               {translate(
                 'auto.components.settings.AccountsPane.96f3649526',
-                'Use Antigravity or Gemini CLI credentials (experimental)'
+                'Use Antigravity or Gemini CLI for usage (experimental)'
               )}
             </Label>
             <p className="text-xs text-muted-foreground">
               {translate(
                 'auto.components.settings.AccountsPane.c2aee76420',
-                "Reads OAuth credentials from Antigravity's native OS keyring or your local Gemini CLI installation to authenticate with Google for {{value0}}. These credentials were issued to Google's apps, not Orca. May break if Google changes their storage. Use at your own risk.",
+                'Reads quota from a running Antigravity CLI or app for {{value0}}, with native keyring and local Gemini CLI credentials as fallbacks. Credentials stay on {{value0}} and are sent only to Google APIs. May break if Google changes these interfaces. Use at your own risk.',
                 { value0: localAccountRuntimeSentenceLabel }
               )}
             </p>

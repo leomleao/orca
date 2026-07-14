@@ -211,6 +211,7 @@ function getGroupedWindowLabel(window: RateLimitGroup['windows'][number]): strin
   return window.name
 }
 
+/** Keeps provider group identifiers stable while localizing their visible labels. */
 export function getWindowGroups(p: ProviderRateLimits): WindowGroupSection[] {
   return (p.groups ?? []).map((group) => ({
     id: group.id,
