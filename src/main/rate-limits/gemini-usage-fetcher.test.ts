@@ -6,11 +6,14 @@ import {
   quotaResponse
 } from './gemini-usage-fetcher.test-fixtures'
 
-const { readFileMock, extractCredsMock, netFetchMock } = vi.hoisted(() => ({
-  readFileMock: vi.fn(),
-  extractCredsMock: vi.fn(),
-  netFetchMock: vi.fn()
-}))
+const { readFileMock, extractCredsMock, netFetchMock, readAntigravityCredentialsMock } = vi.hoisted(
+  () => ({
+    readFileMock: vi.fn(),
+    extractCredsMock: vi.fn(),
+    netFetchMock: vi.fn(),
+    readAntigravityCredentialsMock: vi.fn()
+  })
+)
 
 // Why: mock the extractor at the module boundary rather than re-routing every
 // child_process/fs call. The extractor is a self-contained dependency with a
@@ -19,6 +22,10 @@ const { readFileMock, extractCredsMock, netFetchMock } = vi.hoisted(() => ({
 // already been integration-tested elsewhere.
 vi.mock('./gemini-cli-oauth-extractor', () => ({
   extractOAuthClientCredentials: extractCredsMock
+}))
+
+vi.mock('./antigravity-oauth-keyring', () => ({
+  readAntigravityCredentials: readAntigravityCredentialsMock
 }))
 
 vi.mock('node:fs/promises', () => ({
@@ -37,6 +44,8 @@ describe('fetchGeminiRateLimits', () => {
     readFileMock.mockReset()
     extractCredsMock.mockReset()
     netFetchMock.mockReset()
+    readAntigravityCredentialsMock.mockReset()
+    readAntigravityCredentialsMock.mockResolvedValue(null)
     netFetchMock.mockImplementation((url: string) => {
       if (url.includes('loadCodeAssist')) {
         return Promise.resolve(makeResponse({ cloudaicompanionProject: 'proj-123' }))
@@ -71,6 +80,65 @@ describe('fetchGeminiRateLimits', () => {
   it('returns unavailable when no credentials exist', async () => {
     const result = await fetchGeminiRateLimits(true)
     expect(result.status).toBe('unavailable')
+  })
+
+  it('uses a current Antigravity keyring token before legacy Gemini files', async () => {
+    readAntigravityCredentialsMock.mockResolvedValue({
+      access_token: 'agy-access-token',
+      refresh_token: 'agy-refresh-token',
+      expiry_date: Date.now() + 60_000
+    })
+    netFetchMock.mockImplementation((url: string) => {
+      if (url.includes('loadCodeAssist')) {
+        return Promise.resolve(makeResponse({ cloudaicompanionProject: 'agy-project' }))
+      }
+      if (url.includes('retrieveUserQuota')) {
+        return Promise.resolve(makeResponse(quotaResponse))
+      }
+      return Promise.resolve(makeResponse({}, 404))
+    })
+
+    const result = await fetchGeminiRateLimits(true)
+
+    expect(result.status).toBe('ok')
+    expect(readFileMock).not.toHaveBeenCalled()
+    expect(extractCredsMock).not.toHaveBeenCalled()
+    const quotaRequest = netFetchMock.mock.calls.find(
+      (call) => typeof call[0] === 'string' && call[0].includes('retrieveUserQuota')
+    )
+    expect(quotaRequest).toBeDefined()
+    expect((quotaRequest![1] as RequestInit).headers).toMatchObject({
+      Authorization: 'Bearer agy-access-token'
+    })
+  })
+
+  it('falls back to legacy Gemini credentials when the Antigravity token is expired', async () => {
+    readAntigravityCredentialsMock.mockResolvedValue({
+      access_token: 'expired-agy-access-token',
+      refresh_token: 'agy-refresh-token',
+      expiry_date: Date.now() - 60_000
+    })
+    setupAuthJsonValid()
+    netFetchMock.mockImplementation((url: string) => {
+      if (url.includes('loadCodeAssist')) {
+        return Promise.resolve(makeResponse({ cloudaicompanionProject: 'legacy-project' }))
+      }
+      if (url.includes('retrieveUserQuota')) {
+        return Promise.resolve(makeResponse(quotaResponse))
+      }
+      return Promise.resolve(makeResponse({}, 404))
+    })
+
+    const result = await fetchGeminiRateLimits(true)
+
+    expect(result.status).toBe('ok')
+    expect(readFileMock).toHaveBeenCalled()
+    const quotaRequest = netFetchMock.mock.calls.find(
+      (call) => typeof call[0] === 'string' && call[0].includes('retrieveUserQuota')
+    )
+    expect((quotaRequest![1] as RequestInit).headers).toMatchObject({
+      Authorization: 'Bearer auth-json-access-token'
+    })
   })
 
   it('returns quota via auth.json', async () => {

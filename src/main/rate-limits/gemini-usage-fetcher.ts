@@ -9,6 +9,7 @@ import {
   type GeminiCredentials,
   type GoogleAuthEntry
 } from './gemini-oauth-sources'
+import { readAntigravityCredentials } from './antigravity-oauth-keyring'
 import {
   buildRateLimitBucket,
   deduplicateBuckets,
@@ -217,6 +218,25 @@ export async function fetchGeminiRateLimits(
   }
 
   try {
+    const antigravityCreds = await readAntigravityCredentials()
+    if (antigravityCreds && antigravityCreds.expiry_date > Date.now()) {
+      // Why: AGY owns refreshing and persisting its native-keyring token. Using
+      // only a current token avoids writing Antigravity auth into Gemini's file.
+      const projectId = await loadProjectId(antigravityCreds.access_token).catch(() => {
+        return ''
+      })
+      return projectId
+        ? await fetchQuota(antigravityCreds.access_token, projectId)
+        : {
+            provider: 'gemini',
+            session: null,
+            weekly: null,
+            updatedAt: Date.now(),
+            error: 'Gemini project ID not found',
+            status: 'error'
+          }
+    }
+
     const authJson = await readAuthJson()
     const result =
       authJson?.google?.type === 'oauth'

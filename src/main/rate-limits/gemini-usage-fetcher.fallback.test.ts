@@ -22,6 +22,10 @@ vi.mock('./gemini-cli-oauth-extractor', () => ({
   extractOAuthClientCredentials: extractCredsMock
 }))
 
+vi.mock('./antigravity-oauth-keyring', () => ({
+  readAntigravityCredentials: vi.fn().mockResolvedValue(null)
+}))
+
 vi.mock('node:fs/promises', () => ({
   readFile: readFileMock,
   // Why: saveGeminiCredentials is exercised on the refresh path. The atomic
