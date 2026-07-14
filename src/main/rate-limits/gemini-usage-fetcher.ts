@@ -10,6 +10,7 @@ import {
   type GoogleAuthEntry
 } from './gemini-oauth-sources'
 import { readAntigravityCredentials } from './antigravity-oauth-keyring'
+import { fetchAntigravityLocalRateLimits } from './antigravity-local-quota'
 import {
   buildRateLimitBucket,
   deduplicateBuckets,
@@ -218,6 +219,11 @@ export async function fetchGeminiRateLimits(
   }
 
   try {
+    const antigravityRateLimits = await fetchAntigravityLocalRateLimits()
+    if (antigravityRateLimits) {
+      return antigravityRateLimits
+    }
+
     const antigravityCreds = await readAntigravityCredentials()
     if (antigravityCreds && antigravityCreds.expiry_date > Date.now()) {
       // Why: AGY owns refreshing and persisting its native-keyring token. Using

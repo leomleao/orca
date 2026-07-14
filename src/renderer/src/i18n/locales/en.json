@@ -3218,7 +3218,10 @@
             "42fdd4da1d": "Claude sign-in is being refreshed. Agent sessions may still be signed in.",
             "c06c1d215d": "Claude usage could not be refreshed because the network request failed.",
             "cabdc2a9e0": "Claude sign-in credentials could not be read.",
-            "a7517cccb6": "Claude usage is unavailable right now."
+            "a7517cccb6": "Claude usage is unavailable right now.",
+            "3c639d6830": "Gemini models",
+            "8786272ed1": "Claude and GPT models",
+            "6ff013c8af": "Five-hour"
           },
           "SshTargetStatusRow": {
             "sshHost": "SSH Host"

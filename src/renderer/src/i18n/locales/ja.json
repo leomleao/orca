@@ -3218,7 +3218,10 @@
             "42fdd4da1d": "Claude サインインを更新中です。エージェントセッションはまだサインイン済みの場合があります。",
             "c06c1d215d": "ネットワークリクエストに失敗したため、Claude 使用量を更新できませんでした。",
             "cabdc2a9e0": "Claude サインイン認証情報を読み取れませんでした。",
-            "a7517cccb6": "Claude 使用量は現在利用できません。"
+            "a7517cccb6": "Claude 使用量は現在利用できません。",
+            "3c639d6830": "Gemini models",
+            "8786272ed1": "Claude and GPT models",
+            "6ff013c8af": "Five-hour"
           },
           "SshTargetStatusRow": {
             "sshHost": "SSH ホスト"

@@ -26,6 +26,10 @@ vi.mock('./antigravity-oauth-keyring', () => ({
   readAntigravityCredentials: vi.fn().mockResolvedValue(null)
 }))
 
+vi.mock('./antigravity-local-quota', () => ({
+  fetchAntigravityLocalRateLimits: vi.fn().mockResolvedValue(null)
+}))
+
 vi.mock('node:fs/promises', () => ({
   readFile: readFileMock,
   // Why: saveGeminiCredentials is exercised on the refresh path. The atomic

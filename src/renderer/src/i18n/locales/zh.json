@@ -3218,7 +3218,10 @@
             "42fdd4da1d": "正在刷新 Claude 登录。智能体会话可能仍处于登录状态。",
             "c06c1d215d": "由于网络请求失败，无法刷新 Claude 用量。",
             "cabdc2a9e0": "无法读取 Claude 登录凭据。",
-            "a7517cccb6": "Claude 用量目前不可用。"
+            "a7517cccb6": "Claude 用量目前不可用。",
+            "3c639d6830": "Gemini models",
+            "8786272ed1": "Claude and GPT models",
+            "6ff013c8af": "Five-hour"
           },
           "SshTargetStatusRow": {
             "sshHost": "SSH 主机"

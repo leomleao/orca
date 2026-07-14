@@ -6,14 +6,19 @@ import {
   quotaResponse
 } from './gemini-usage-fetcher.test-fixtures'
 
-const { readFileMock, extractCredsMock, netFetchMock, readAntigravityCredentialsMock } = vi.hoisted(
-  () => ({
-    readFileMock: vi.fn(),
-    extractCredsMock: vi.fn(),
-    netFetchMock: vi.fn(),
-    readAntigravityCredentialsMock: vi.fn()
-  })
-)
+const {
+  readFileMock,
+  extractCredsMock,
+  netFetchMock,
+  readAntigravityCredentialsMock,
+  fetchAntigravityLocalRateLimitsMock
+} = vi.hoisted(() => ({
+  readFileMock: vi.fn(),
+  extractCredsMock: vi.fn(),
+  netFetchMock: vi.fn(),
+  readAntigravityCredentialsMock: vi.fn(),
+  fetchAntigravityLocalRateLimitsMock: vi.fn()
+}))
 
 // Why: mock the extractor at the module boundary rather than re-routing every
 // child_process/fs call. The extractor is a self-contained dependency with a
@@ -26,6 +31,10 @@ vi.mock('./gemini-cli-oauth-extractor', () => ({
 
 vi.mock('./antigravity-oauth-keyring', () => ({
   readAntigravityCredentials: readAntigravityCredentialsMock
+}))
+
+vi.mock('./antigravity-local-quota', () => ({
+  fetchAntigravityLocalRateLimits: fetchAntigravityLocalRateLimitsMock
 }))
 
 vi.mock('node:fs/promises', () => ({
@@ -46,6 +55,8 @@ describe('fetchGeminiRateLimits', () => {
     netFetchMock.mockReset()
     readAntigravityCredentialsMock.mockReset()
     readAntigravityCredentialsMock.mockResolvedValue(null)
+    fetchAntigravityLocalRateLimitsMock.mockReset()
+    fetchAntigravityLocalRateLimitsMock.mockResolvedValue(null)
     netFetchMock.mockImplementation((url: string) => {
       if (url.includes('loadCodeAssist')) {
         return Promise.resolve(makeResponse({ cloudaicompanionProject: 'proj-123' }))
@@ -80,6 +91,26 @@ describe('fetchGeminiRateLimits', () => {
   it('returns unavailable when no credentials exist', async () => {
     const result = await fetchGeminiRateLimits(true)
     expect(result.status).toBe('unavailable')
+  })
+
+  it('uses Antigravity grouped quota before credential-based sources', async () => {
+    const groupedQuota = {
+      provider: 'gemini' as const,
+      session: { usedPercent: 4, windowMinutes: 300, resetsAt: null, resetDescription: null },
+      weekly: { usedPercent: 8, windowMinutes: 10_080, resetsAt: null, resetDescription: null },
+      groups: [],
+      updatedAt: Date.now(),
+      error: null,
+      status: 'ok' as const
+    }
+    fetchAntigravityLocalRateLimitsMock.mockResolvedValue(groupedQuota)
+
+    const result = await fetchGeminiRateLimits(true)
+
+    expect(result).toBe(groupedQuota)
+    expect(readAntigravityCredentialsMock).not.toHaveBeenCalled()
+    expect(readFileMock).not.toHaveBeenCalled()
+    expect(netFetchMock).not.toHaveBeenCalled()
   })
 
   it('uses a current Antigravity keyring token before legacy Gemini files', async () => {

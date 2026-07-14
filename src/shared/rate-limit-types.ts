@@ -15,6 +15,17 @@ export type RateLimitBucket = RateLimitWindow & {
   name: string
 }
 
+export type RateLimitGroup = {
+  /** Stable provider-defined identifier used for localized display copy. */
+  id: string
+  name: string
+  windows: {
+    id: string
+    name: string
+    window: RateLimitWindow
+  }[]
+}
+
 export type UsageRateLimitSource = 'oauth' | 'cli' | 'web'
 
 export type UsageRateLimitFailureKind =
@@ -63,6 +74,8 @@ export type ProviderRateLimits = {
   monthly?: RateLimitWindow | null
   /** Named per-model buckets (Gemini only). */
   buckets?: RateLimitBucket[]
+  /** Provider-defined groups containing multiple quota windows. */
+  groups?: RateLimitGroup[]
   /** Available earned Codex rate-limit reset credits, if reported. */
   rateLimitResetCredits?: {
     availableCount: number

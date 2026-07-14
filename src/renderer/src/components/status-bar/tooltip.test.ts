@@ -28,6 +28,7 @@ import {
   formatResetCountdown,
   getProviderUsageErrorMessage,
   getProviderUsageStatusLabel,
+  getWindowGroups,
   getWindowSections,
   ProviderIcon,
   ProviderPanel
@@ -412,6 +413,62 @@ describe('getWindowSections', () => {
     expect(sections[0].label).toBe('Pro')
     expect(sections[0].window!.resetsAt).toBe(18000000)
     expect(sections[0].window!.resetDescription).toBe('5:00 PM')
+  })
+})
+
+describe('getWindowGroups', () => {
+  it('localizes Antigravity model families and their quota windows', () => {
+    const fiveHour = {
+      usedPercent: 0,
+      windowMinutes: 300,
+      resetsAt: null,
+      resetDescription: null
+    }
+    const weekly = {
+      usedPercent: 8,
+      windowMinutes: 10_080,
+      resetsAt: null,
+      resetDescription: null
+    }
+    const p = provider({
+      provider: 'antigravity',
+      status: 'ok',
+      session: fiveHour,
+      weekly,
+      groups: [
+        {
+          id: 'gemini-models',
+          name: 'Gemini Models',
+          windows: [
+            { id: 'session', name: 'Five Hour Limit', window: fiveHour },
+            { id: 'weekly', name: 'Weekly Limit', window: weekly }
+          ]
+        },
+        {
+          id: 'claude-gpt-models',
+          name: 'Claude and GPT models',
+          windows: [
+            { id: 'session', name: 'Five Hour Limit', window: fiveHour },
+            { id: 'weekly', name: 'Weekly Limit', window: weekly }
+          ]
+        }
+      ]
+    })
+
+    expect(getWindowGroups(p).map((group) => group.label)).toEqual([
+      'Gemini models',
+      'Claude and GPT models'
+    ])
+    expect(getWindowGroups(p)[0]?.windows.map((window) => window.label)).toEqual([
+      'Five-hour',
+      'Weekly'
+    ])
+
+    const markup = renderToStaticMarkup(ProviderPanel({ p, usagePercentageDisplay: 'remaining' }))
+    expect(markup).toContain('Gemini models')
+    expect(markup).toContain('Claude and GPT models')
+    expect(markup.match(/Five-hour/g)).toHaveLength(2)
+    expect(markup.match(/92% left/g)).toHaveLength(2)
   })
 })
 

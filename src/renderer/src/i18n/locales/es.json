@@ -3218,7 +3218,10 @@
             "42fdd4da1d": "Se está actualizando el inicio de sesión de Claude. Las sesiones de agentes pueden seguir iniciadas.",
             "c06c1d215d": "No se pudo actualizar el uso de Claude porque falló la solicitud de red.",
             "cabdc2a9e0": "No se pudieron leer las credenciales de inicio de sesión de Claude.",
-            "a7517cccb6": "El uso de Claude no está disponible ahora."
+            "a7517cccb6": "El uso de Claude no está disponible ahora.",
+            "3c639d6830": "Gemini models",
+            "8786272ed1": "Claude and GPT models",
+            "6ff013c8af": "Five-hour"
           },
           "SshTargetStatusRow": {
             "sshHost": "Host SSH"

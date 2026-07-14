@@ -3218,7 +3218,10 @@
             "42fdd4da1d": "Claude 로그인을 새로 고치는 중입니다. 에이전트 세션은 여전히 로그인되어 있을 수 있습니다.",
             "c06c1d215d": "네트워크 요청 실패로 Claude 사용량을 새로 고칠 수 없습니다.",
             "cabdc2a9e0": "Claude 로그인 자격 증명을 읽을 수 없습니다.",
-            "a7517cccb6": "현재 Claude 사용량을 사용할 수 없습니다."
+            "a7517cccb6": "현재 Claude 사용량을 사용할 수 없습니다.",
+            "3c639d6830": "Gemini models",
+            "8786272ed1": "Claude and GPT models",
+            "6ff013c8af": "Five-hour"
           },
           "SshTargetStatusRow": {
             "sshHost": "SSH 호스트"
