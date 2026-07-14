@@ -191,6 +191,7 @@ type WindowGroupSection = {
   windows: GroupedWindowSection[]
 }
 
+/** Localizes known model-family labels while preserving server-provided names. */
 function getWindowGroupLabel(group: RateLimitGroup): string {
   if (group.id === 'gemini-models') {
     return translate('auto.components.status.bar.tooltip.3c639d6830', 'Gemini models')
@@ -201,6 +202,7 @@ function getWindowGroupLabel(group: RateLimitGroup): string {
   return group.name
 }
 
+/** Localizes known window labels while preserving server-provided names. */
 function getGroupedWindowLabel(window: RateLimitGroup['windows'][number]): string {
   if (window.id === 'session') {
     return translate('auto.components.status.bar.tooltip.6ff013c8af', 'Five-hour')

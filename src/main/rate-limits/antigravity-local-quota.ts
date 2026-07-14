@@ -30,6 +30,7 @@ export type AntigravityLocalRateLimitOptions = {
   appDataPath?: string
 }
 
+/** Converts a listener value into a valid TCP port. */
 function validPort(value: string | undefined): number | null {
   const port = Number(value)
   return Number.isInteger(port) && port > 0 && port <= 65_535 ? port : null
@@ -88,6 +89,7 @@ export function parseAntigravityAppConfig(html: string): AntigravityAppConfig | 
   }
 }
 
+/** Sends a bounded request to an Antigravity service on the loopback interface. */
 function requestLocalAntigravity(
   protocol: LocalProtocol,
   port: number,
@@ -149,10 +151,12 @@ function requestLocalAntigravity(
   })
 }
 
+/** Parses a local quota response into Orca's provider rate-limit shape. */
 function parseQuotaResponse(response: string): ProviderRateLimits | null {
   return parseAntigravityQuotaSummary(JSON.parse(response) as unknown)
 }
 
+/** Searches recent CLI logs for the newest reachable Antigravity server. */
 async function fetchFromCliLogs(homePath: string): Promise<ProviderRateLimits | null> {
   const logDirectory = getAntigravityCliLogDirectory(homePath)
   const entries = await readdir(logDirectory, { withFileTypes: true })
@@ -206,6 +210,7 @@ async function fetchFromCliLogs(homePath: string): Promise<ProviderRateLimits | 
   return null
 }
 
+/** Reads quota from the Antigravity desktop language server. */
 async function fetchFromDesktopApp(
   homePath: string,
   appDataPath: string

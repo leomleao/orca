@@ -7,6 +7,10 @@ const KEYRING_SERVICE = 'gemini'
 const KEYRING_ACCOUNT = 'antigravity'
 const KEYRING_VALUE_PREFIX = 'go-keyring-base64:'
 const KEYRING_TIMEOUT_MS = 3_000
+const KEYRING_MISS_CACHE_MS = 60_000
+const WINDOWS_TARGET_PLACEHOLDER = '__ORCA_CREDENTIAL_TARGET__'
+
+let keyringMissExpiresAt = 0
 
 type KeyringCommand = {
   command: string
@@ -44,7 +48,7 @@ public static class OrcaCredentialReader {
 '@
 Add-Type -TypeDefinition $signature
 $pointer = [IntPtr]::Zero
-if ([OrcaCredentialReader]::CredRead('gemini:antigravity', 1, 0, [ref]$pointer)) {
+if ([OrcaCredentialReader]::CredRead('${WINDOWS_TARGET_PLACEHOLDER}', 1, 0, [ref]$pointer)) {
   try {
     $credential = [Runtime.InteropServices.Marshal]::PtrToStructure(
       $pointer,
@@ -63,6 +67,14 @@ if ([OrcaCredentialReader]::CredRead('gemini:antigravity', 1, 0, [ref]$pointer))
   }
 }
 `.trim()
+
+/** Builds the Windows credential reader from the same service and account used elsewhere. */
+function buildWindowsCredentialScript(): string {
+  return WINDOWS_CREDENTIAL_SCRIPT.replace(
+    WINDOWS_TARGET_PLACEHOLDER,
+    `${KEYRING_SERVICE}:${KEYRING_ACCOUNT}`
+  )
+}
 
 /** Keeps native credential-store access behind fixed, platform-specific commands. */
 export function getAntigravityKeyringCommand(platform: NodeJS.Platform): KeyringCommand | null {
@@ -84,7 +96,7 @@ export function getAntigravityKeyringCommand(platform: NodeJS.Platform): Keyring
     case 'win32':
       return {
         command: 'powershell.exe',
-        args: ['-NoProfile', '-NonInteractive', '-Command', WINDOWS_CREDENTIAL_SCRIPT],
+        args: ['-NoProfile', '-NonInteractive', '-Command', buildWindowsCredentialScript()],
         output: 'base64'
       }
     case 'aix':
@@ -145,6 +157,10 @@ export async function readAntigravityCredentials(): Promise<GeminiCredentials | 
   if (!command) {
     return null
   }
+  const now = Date.now()
+  if (now < keyringMissExpiresAt) {
+    return null
+  }
 
   try {
     // Why: AGY moved OAuth state into the OS keyring, so the legacy Gemini file
@@ -157,9 +173,14 @@ export async function readAntigravityCredentials(): Promise<GeminiCredentials | 
     })
     const keyringValue =
       command.output === 'base64' ? Buffer.from(stdout.trim(), 'base64').toString('utf8') : stdout
-    return parseAntigravityKeyringCredentials(keyringValue)
+    const credentials = parseAntigravityKeyringCredentials(keyringValue)
+    // Why: background refreshes should not repeatedly spawn native keyring tools
+    // when Antigravity is absent, locked, or contains an unreadable value.
+    keyringMissExpiresAt = credentials ? 0 : now + KEYRING_MISS_CACHE_MS
+    return credentials
   } catch {
     // A locked or unavailable keyring should fall through to legacy Gemini sources.
+    keyringMissExpiresAt = now + KEYRING_MISS_CACHE_MS
     return null
   }
 }

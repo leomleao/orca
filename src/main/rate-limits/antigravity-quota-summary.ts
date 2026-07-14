@@ -17,6 +17,7 @@ type QuotaSummaryGroup = {
   buckets: QuotaSummaryBucket[]
 }
 
+/** Validates one quota-summary bucket from an untrusted local response. */
 function parseBucket(value: unknown): QuotaSummaryBucket | null {
   if (!value || typeof value !== 'object') {
     return null
@@ -43,6 +44,7 @@ function parseBucket(value: unknown): QuotaSummaryBucket | null {
   }
 }
 
+/** Maps Antigravity bucket families to stable Orca group identifiers. */
 function getGroupId(group: QuotaSummaryGroup): string {
   if (group.buckets.some((bucket) => bucket.bucketId.startsWith('gemini-'))) {
     return 'gemini-models'
@@ -56,6 +58,7 @@ function getGroupId(group: QuotaSummaryGroup): string {
     .replaceAll(/^-|-$/g, '')
 }
 
+/** Maps Antigravity window labels to Orca's session and weekly identifiers. */
 function getWindowId(bucket: QuotaSummaryBucket): 'session' | 'weekly' | null {
   if (bucket.window === '5h' || bucket.bucketId.endsWith('-5h')) {
     return 'session'
@@ -66,6 +69,7 @@ function getWindowId(bucket: QuotaSummaryBucket): 'session' | 'weekly' | null {
   return null
 }
 
+/** Converts remaining quota into Orca's consumption-based window model. */
 function toRateLimitWindow(bucket: QuotaSummaryBucket): RateLimitWindow {
   const remainingFraction = Math.min(1, Math.max(0, bucket.remainingFraction))
   const resetsAt = bucket.resetTime ? new Date(bucket.resetTime).getTime() : Number.NaN
@@ -77,6 +81,7 @@ function toRateLimitWindow(bucket: QuotaSummaryBucket): RateLimitWindow {
   }
 }
 
+/** Parses one display group while discarding unsupported or malformed windows. */
 function parseGroup(value: unknown): RateLimitGroup | null {
   if (!value || typeof value !== 'object') {
     return null
@@ -109,6 +114,7 @@ function parseGroup(value: unknown): RateLimitGroup | null {
   }
 }
 
+/** Selects the highest-consumption window for the provider-level summary. */
 function mostConstrainedWindow(groups: RateLimitGroup[], id: string): RateLimitWindow | null {
   const windows = groups.flatMap((group) =>
     group.windows.filter((entry) => entry.id === id).map((entry) => entry.window)

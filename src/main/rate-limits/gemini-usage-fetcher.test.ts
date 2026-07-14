@@ -172,6 +172,76 @@ describe('fetchGeminiRateLimits', () => {
     })
   })
 
+  it('falls back when a current Antigravity token cannot resolve a project', async () => {
+    readAntigravityCredentialsMock.mockResolvedValue({
+      access_token: 'stale-agy-access-token',
+      refresh_token: 'agy-refresh-token',
+      expiry_date: Date.now() + 60_000
+    })
+    setupAuthJsonValid()
+    netFetchMock.mockImplementation((url: string, options?: RequestInit) => {
+      const authorization = (options?.headers as Record<string, string> | undefined)?.Authorization
+      if (url.includes('loadCodeAssist')) {
+        return authorization === 'Bearer stale-agy-access-token'
+          ? Promise.resolve(makeResponse({}, 500))
+          : Promise.resolve(makeResponse({ cloudaicompanionProject: 'legacy-project' }))
+      }
+      if (url.includes('retrieveUserQuota')) {
+        return Promise.resolve(makeResponse(quotaResponse))
+      }
+      return Promise.resolve(makeResponse({}, 404))
+    })
+
+    const result = await fetchGeminiRateLimits(true)
+
+    expect(result.status).toBe('ok')
+    const quotaRequest = netFetchMock.mock.calls.find(
+      (call) => typeof call[0] === 'string' && call[0].includes('retrieveUserQuota')
+    )
+    expect((quotaRequest![1] as RequestInit).headers).toMatchObject({
+      Authorization: 'Bearer auth-json-access-token'
+    })
+  })
+
+  it('falls back when a current Antigravity token returns a quota error', async () => {
+    readAntigravityCredentialsMock.mockResolvedValue({
+      access_token: 'stale-agy-access-token',
+      refresh_token: 'agy-refresh-token',
+      expiry_date: Date.now() + 60_000
+    })
+    setupAuthJsonValid()
+    netFetchMock.mockImplementation((url: string, options?: RequestInit) => {
+      const authorization = (options?.headers as Record<string, string> | undefined)?.Authorization
+      if (url.includes('loadCodeAssist')) {
+        return Promise.resolve(
+          makeResponse({
+            cloudaicompanionProject:
+              authorization === 'Bearer stale-agy-access-token'
+                ? 'stale-agy-project'
+                : 'legacy-project'
+          })
+        )
+      }
+      if (url.includes('retrieveUserQuota')) {
+        return authorization === 'Bearer stale-agy-access-token'
+          ? Promise.resolve(makeResponse({}, 500))
+          : Promise.resolve(makeResponse(quotaResponse))
+      }
+      return Promise.resolve(makeResponse({}, 404))
+    })
+
+    const result = await fetchGeminiRateLimits(true)
+
+    expect(result.status).toBe('ok')
+    const quotaRequests = netFetchMock.mock.calls.filter(
+      (call) => typeof call[0] === 'string' && call[0].includes('retrieveUserQuota')
+    )
+    expect(quotaRequests).toHaveLength(2)
+    expect((quotaRequests[1]![1] as RequestInit).headers).toMatchObject({
+      Authorization: 'Bearer auth-json-access-token'
+    })
+  })
+
   it('returns quota via auth.json', async () => {
     setupAuthJsonValid()
     netFetchMock.mockImplementation((url: string) => {
